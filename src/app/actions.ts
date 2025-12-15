@@ -1,0 +1,100 @@
+
+"use server";
+
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { db } from "@/lib/db";
+import { drafts, emails, account } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { getGmailClient } from "@/lib/gmail";
+import { revalidatePath } from "next/cache";
+
+export async function approveDraft(draftId: string) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    // Fetch draft
+    const draftList = await db.select({
+        draft: drafts,
+        email: emails
+    })
+        .from(drafts)
+        .innerJoin(emails, eq(drafts.emailId, emails.id))
+        .where(and(eq(drafts.id, draftId), eq(emails.userId, session.user.id)));
+
+    const item = draftList[0];
+    if (!item) throw new Error("Draft not found");
+
+    const { draft, email } = item;
+
+    // Send via Gmail
+    const gmail = await getGmailClient(session.user.id);
+
+    // Construct raw email
+    // Headers: To (Original Sender), Subject (Re: ...), In-Reply-To
+    const rawMessage = makeBody(
+        email.subject?.startsWith("Re:") ? email.subject : `Re: ${email.subject}`,
+        email.sender || "recipient@example.com",
+        draft.content
+    );
+
+    try {
+        await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: rawMessage,
+                threadId: email.threadId || undefined
+            }
+        });
+
+        // Update status
+        await db.update(drafts).set({ status: 'sent' }).where(eq(drafts.id, draftId));
+        revalidatePath("/dashboard");
+        return { success: true };
+    } catch (e) {
+        console.error(e);
+        throw new Error("Failed to send email");
+    }
+}
+
+export async function discardDraft(draftId: string) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    // Verify ownership via join
+    const exists = await db.select({ id: drafts.id })
+        .from(drafts)
+        .innerJoin(emails, eq(drafts.emailId, emails.id))
+        .where(and(eq(drafts.id, draftId), eq(emails.userId, session.user.id)));
+
+    if (exists.length === 0) throw new Error("Draft not found");
+
+    await db.update(drafts).set({ status: 'rejected' }).where(eq(drafts.id, draftId));
+    revalidatePath("/dashboard");
+}
+
+
+// Helper to base64url encode email
+function makeBody(subject: string, to: string, body: string) {
+    const str = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        `Content-Type: text/plain; charset="UTF-8"`,
+        `MIME-Version: 1.0`,
+        `Content-Transfer-Encoding: 7bit`,
+        ``,
+        body
+    ].join("\n");
+
+    return Buffer.from(str).toString("base64").replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}

@@ -1,0 +1,173 @@
+
+
+## ROLE
+
+You are a senior full-stack AI SaaS engineer.
+You are building a production-ready **AI Email Assistant for SMBs** using the exact stack and constraints below.
+Optimize for correctness, security, and simplicity for non-technical users.
+
+---
+
+## PRODUCT GOAL
+
+Build an AI-powered email assistant that:
+
+* Connects to a user’s Gmail
+* Reads incoming emails
+* Categorizes emails (personal, invoice, client, urgent)
+* Extracts invoices, tasks, and client documents
+* Drafts replies for urgent emails (user approval required)
+* Presents everything in a simple dashboard
+
+Target users: freelancers and businesses with 2–5 people.
+
+---
+
+## TECH STACK (STRICT — DO NOT SUBSTITUTE)
+
+* **Framework:** Next.js (App Router)
+* **Hosting:** Vercel
+* **AI:** Vercel AI SDK
+* **Auth:** Better Auth
+* **Database:** Neon Postgres
+* **Storage:** Cloudflare R2
+* **Background processing:** Vercel Serverless Functions + Vercel Cron
+* **Email provider:** Gmail API (OAuth2)
+
+---
+
+## NON-NEGOTIABLE RULES
+
+1. Use **least-privilege Gmail scopes**
+2. Encrypt refresh tokens before storing
+3. Never auto-send emails — drafts require user approval
+4. Store only required email metadata (no full mailbox cloning)
+5. All AI outputs must be structured JSON where applicable
+6. Favor server actions & API routes over client logic
+
+---
+
+## CORE FEATURES TO IMPLEMENT
+
+### 1. Authentication & Gmail Connect
+
+* Implement Better Auth signup/login
+* Google OAuth flow for Gmail
+* Store:
+
+  * access token
+  * encrypted refresh token
+  * token expiry
+* Use server-only environment variables
+
+---
+
+### 2. Email Ingestion
+
+* Use Vercel Cron or API route trigger
+* Fetch new Gmail messages
+* Store:
+
+  * gmail message id
+  * subject
+  * snippet
+  * received timestamp
+* Upload attachments to Cloudflare R2
+
+---
+
+### 3. AI Processing Pipeline (Worker Function)
+
+For each new email:
+
+1. Classify email into:
+
+   * personal
+   * invoice
+   * client
+   * urgent
+2. If invoice:
+
+   * Extract vendor, amount, due date
+3. If urgent:
+
+   * Generate a short professional draft reply
+4. Save structured results to Neon
+
+Use **Vercel AI SDK** with deterministic prompts and JSON schemas.
+
+---
+
+### 4. Dashboard UI
+
+Create a clean UI with these sections:
+
+* Inbox (categorized)
+* Invoices
+* Client documents
+* Draft replies (approval required)
+
+UX rules:
+
+* No AI jargon
+* Clear actions
+* Minimal settings
+
+---
+
+## DATABASE SCHEMA (MVP)
+
+Create tables for:
+
+* users
+* oauth_accounts
+* emails
+* attachments
+* invoices
+* tasks
+
+Use proper indexes and foreign keys.
+
+---
+
+## AI PROMPTING RULES
+
+* Classification → single label only
+* Extraction → strict JSON schema
+* Draft replies → 2–4 sentences, professional, neutral tone
+* Retry once on malformed output
+
+---
+
+## SECURITY & COMPLIANCE
+
+* Encrypt refresh tokens at rest
+* Allow full data deletion per user
+* Log all AI actions (classification, draft generation)
+* Never expose tokens to the client
+
+---
+
+## DELIVERABLES
+
+You must generate:
+
+1. Next.js project structure
+2. Auth + OAuth implementation
+3. Email ingestion API route
+4. AI worker function
+5. Database schema + migrations
+6. Minimal UI pages
+7. Environment variable list
+8. Clear TODOs for future scaling
+
+---
+
+## EXECUTION STYLE
+
+* Write clean, production-grade code
+* Prefer clarity over abstraction
+* Comment only where logic is non-obvious
+* Assume this will be deployed to real users
+
+Begin execution immediately.
