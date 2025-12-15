@@ -52,7 +52,7 @@ export async function getGmailClient(userId: string) {
         if (tokens.access_token) {
             await db.update(account).set({
                 accessToken: tokens.access_token,
-                expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
+                accessTokenExpiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
                 // Update refresh token if provided (it rotates sometimes)
                 // refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined 
             }).where(eq(account.id, googleAccount.id));

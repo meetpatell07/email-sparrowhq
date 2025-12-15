@@ -15,6 +15,7 @@ export const user = pgTable("user", {
 export const session = pgTable("session", {
     id: text("id").primaryKey(),
     expiresAt: timestamp("expiresAt").notNull(),
+    token: text("token").notNull().unique(),
     ipAddress: text("ipAddress"),
     userAgent: text("userAgent"),
     userId: text("userId").notNull().references(() => user.id),
@@ -28,9 +29,11 @@ export const account = pgTable("account", {
     providerId: text("providerId").notNull(),
     userId: text("userId").notNull().references(() => user.id),
     accessToken: text("accessToken"),
-    refreshToken: text("refreshToken"), // Encrypted
+    refreshToken: text("refreshToken"),
     idToken: text("idToken"),
-    expiresAt: timestamp("expiresAt"),
+    accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+    refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+    scope: text("scope"),
     password: text("password"),
     createdAt: timestamp("createdAt").notNull(),
     updatedAt: timestamp("updatedAt").notNull(),
