@@ -3,7 +3,8 @@
 import useSWR from "swr";
 import { EmailRow } from "@/components/EmailRow";
 import { GmailEmail } from "@/lib/gmail";
-import { SignOutButton } from "@/components/SignOutButton";
+import { Sidebar } from "@/components/Sidebar";
+import { SyncButton } from "@/components/SyncButton";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -13,22 +14,6 @@ export default function DashboardPage() {
     fetcher
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen p-6 flex items-center justify-center">
-        <div className="text-muted-foreground">Loading emails...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen p-6 flex items-center justify-center">
-        <div className="text-destructive">Failed to load emails</div>
-      </div>
-    );
-  }
-
   const emails = data?.emails || [];
 
   const parsedEmails = emails.map((email) => ({
@@ -37,20 +22,49 @@ export default function DashboardPage() {
   }));
 
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between p-4 border-b">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <SignOutButton />
-      </header>
-      <section className="p-6">
-        {parsedEmails.length === 0 ? (
-          <div className="py-4 text-center text-muted-foreground">
-            No emails found.
+    <div className="flex h-screen bg-white font-sans overflow-hidden">
+      <Sidebar />
+
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-16 flex items-center justify-between px-8 border-b border-gray-50 flex-shrink-0">
+          <h1 className="text-xl font-semibold text-black">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <SyncButton />
           </div>
-        ) : (
-          parsedEmails.map((email) => <EmailRow key={email.id} email={email} />)
-        )}
-      </section>
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="p-8 max-w-5xl mx-auto w-full">
+            <div className="mb-8">
+              <h2 className="text-2xl text-gray-900 font-bold mb-2">Recent Emails</h2>
+              <p className="text-gray-400 text-sm font-medium leading-none">
+                You have {parsedEmails.length} recent messages
+              </p>
+            </div>
+
+            <section className="space-y-3 pb-8">
+              {isLoading ? (
+                <div className="py-20 text-center">
+                  <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-400 font-medium">Loading your mailbox...</p>
+                </div>
+              ) : error ? (
+                <div className="py-20 text-center text-red-500 font-medium">
+                  Failed to load emails. Please try again.
+                </div>
+              ) : parsedEmails.length === 0 ? (
+                <div className="py-20 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                  <p className="text-gray-400 font-medium whitespace-pre-wrap">No emails found.\nTry syncing your account.</p>
+                </div>
+              ) : (
+                parsedEmails.map((email) => <EmailRow key={email.id} email={email} />)
+              )}
+            </section>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
