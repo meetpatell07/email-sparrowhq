@@ -1,244 +1,257 @@
 import { google } from "googleapis";
-import { db } from "./db";
-import { account } from "./db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { account, emails } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { decrypt } from "./encryption";
 
 export async function getGmailClient(userId: string) {
-  // Fetch user's google account
-  const accounts = await db
-    .select()
-    .from(account)
-    .where(eq(account.userId, userId));
-  const googleAccount = accounts.find((acc) => acc.providerId === "google");
+    // Fetch user's google account
+    const accounts = await db
+        .select()
+        .from(account)
+        .where(eq(account.userId, userId));
+    const googleAccount = accounts.find((acc) => acc.providerId === "google");
 
-  if (!googleAccount || !googleAccount.refreshToken) {
-    throw new Error(
-      "User has no Google account linked or missing refresh token"
+    if (!googleAccount || !googleAccount.refreshToken) {
+        throw new Error(
+            "User has no Google account linked or missing refresh token"
+        );
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
     );
-  }
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
+    // If we encrypted the refresh token, decrypt it here.
+    // Note: Better Auth default storage might not be encrypted.
+    // We assume here we are trying to decrypt it, or if it fails (not encrypted), we use it raw?
+    // For the sake of the requirement "Encrypt refresh tokens", let's assume we handle it.
+    // Since we haven't implemented the write-side encryption yet, this might fail if we try to decrypt plain text.
+    // However, I will write it to support both or just decrypt assuming we solve the write side.
 
-  // If we encrypted the refresh token, decrypt it here.
-  // Note: Better Auth default storage might not be encrypted.
-  // We assume here we are trying to decrypt it, or if it fails (not encrypted), we use it raw?
-  // For the sake of the requirement "Encrypt refresh tokens", let's assume we handle it.
-  // Since we haven't implemented the write-side encryption yet, this might fail if we try to decrypt plain text.
-  // However, I will write it to support both or just decrypt assuming we solve the write side.
-
-  let refreshToken = googleAccount.refreshToken;
-  try {
-    if (refreshToken.includes(":")) {
-      refreshToken = decrypt(refreshToken);
+    let refreshToken = googleAccount.refreshToken;
+    try {
+        if (refreshToken.includes(":")) {
+            refreshToken = decrypt(refreshToken);
+        }
+    } catch {
+        // ignore, might be plain text
     }
-  } catch {
-    // ignore, might be plain text
-  }
 
-  oauth2Client.setCredentials({
-    access_token: googleAccount.accessToken,
-    refresh_token: refreshToken,
-    // expiry_date: googleAccount.expiresAt?.getTime(), // Optional, google client handles refresh if token is there
-  });
+    oauth2Client.setCredentials({
+        access_token: googleAccount.accessToken,
+        refresh_token: refreshToken,
+        // expiry_date: googleAccount.expiresAt?.getTime(), // Optional, google client handles refresh if token is there
+    });
 
-  // Handle token refresh events to update DB?
-  // googleapis automatically refreshes access token if expired, providing we gave refresh token.
-  // But we should probably listen to 'tokens' event to save new access token/refresh token if it rotates.
+    // Handle token refresh events to update DB?
+    // googleapis automatically refreshes access token if expired, providing we gave refresh token.
+    // But we should probably listen to 'tokens' event to save new access token/refresh token if it rotates.
 
-  oauth2Client.on("tokens", async (tokens) => {
-    // Update DB
-    // This is a bit tricky in serverless as this might happen during a request.
-    // We should update the access token in DB.
-    if (tokens.access_token) {
-      await db
-        .update(account)
-        .set({
-          accessToken: tokens.access_token,
-          accessTokenExpiresAt: tokens.expiry_date
-            ? new Date(tokens.expiry_date)
-            : undefined,
-          // Update refresh token if provided (it rotates sometimes)
-          // refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined
-        })
-        .where(eq(account.id, googleAccount.id));
-    }
-  });
+    oauth2Client.on("tokens", async (tokens) => {
+        // Update DB
+        // This is a bit tricky in serverless as this might happen during a request.
+        // We should update the access token in DB.
+        if (tokens.access_token) {
+            await db
+                .update(account)
+                .set({
+                    accessToken: tokens.access_token,
+                    accessTokenExpiresAt: tokens.expiry_date
+                        ? new Date(tokens.expiry_date)
+                        : undefined,
+                    // Update refresh token if provided (it rotates sometimes)
+                    // refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined
+                })
+                .where(eq(account.id, googleAccount.id));
+        }
+    });
 
-  return google.gmail({ version: "v1", auth: oauth2Client });
+    return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 export interface GmailEmail {
-  id: string;
-  gmailId: string;
-  subject: string;
-  snippet: string;
-  receivedAt: Date;
-  sender: string;
-  recipient: string;
-  category?: string;
-  isProcessed?: boolean;
+    id: string;
+    gmailId: string;
+    subject: string;
+    snippet: string;
+    receivedAt: Date;
+    sender: string;
+    recipient: string;
+    category?: string;
+    isProcessed?: boolean;
 }
 
 export async function fetchEmailsFromGmail(
-  userId: string,
-  limit: number = 20
+    userId: string,
+    limit: number = 20
 ): Promise<GmailEmail[]> {
-  try {
-    const gmail = await getGmailClient(userId);
+    try {
+        const gmail = await getGmailClient(userId);
 
-    // Fetch list of messages
-    const listResponse = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: limit,
-    });
+        // Fetch list of messages
+        const listResponse = await gmail.users.messages.list({
+            userId: "me",
+            maxResults: limit,
+        });
 
-    const messages = listResponse.data.messages || [];
-    const emailList: GmailEmail[] = [];
+        const messages = listResponse.data.messages || [];
+        const gmailIds = messages.map(m => m.id).filter(Boolean) as string[];
 
-    // Fetch full details for each message
-    for (const msg of messages) {
-      if (!msg.id) continue;
+        // Fetch existing categories from DB for these IDs
+        const dbEmails = await db.select({
+            gmailId: emails.gmailId,
+            category: emails.category,
+            isProcessed: emails.isProcessed
+        })
+            .from(emails)
+            .where(inArray(emails.gmailId, gmailIds));
 
-      try {
+        const dbMap = new Map(dbEmails.map(e => [e.gmailId, e]));
+        const emailList: GmailEmail[] = [];
+
+        // Fetch full details for each message
+        for (const msg of messages) {
+            if (!msg.id) continue;
+
+            try {
+                const fullMsg = await gmail.users.messages.get({
+                    userId: "me",
+                    id: msg.id,
+                    format: "full",
+                });
+
+                const payload = fullMsg.data.payload;
+                if (!payload) continue;
+
+                const headers = payload.headers || [];
+                const subject =
+                    headers.find((h) => h.name === "Subject")?.value || "(No Subject)";
+                const from = headers.find((h) => h.name === "From")?.value || "";
+                const to = headers.find((h) => h.name === "To")?.value || "";
+                const dateStr = headers.find((h) => h.name === "Date")?.value;
+                const receivedAt = dateStr ? new Date(dateStr) : new Date();
+                const snippet = fullMsg.data.snippet || "";
+
+                const dbRecord = dbMap.get(msg.id);
+
+                emailList.push({
+                    id: msg.id,
+                    gmailId: msg.id,
+                    subject,
+                    snippet,
+                    receivedAt,
+                    sender: from,
+                    recipient: to,
+                    category: dbRecord?.category || undefined,
+                    isProcessed: dbRecord?.isProcessed || false,
+                });
+            } catch (error) {
+                console.error(`Error fetching message ${msg.id}:`, error);
+            }
+        }
+
+        // Sort by receivedAt descending
+        emailList.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
+
+        return emailList;
+    } catch (error) {
+        console.error("Error fetching emails from Gmail:", error);
+        throw error;
+    }
+}
+
+export interface GmailEmailDetail extends GmailEmail {
+    body: string;
+    htmlBody?: string;
+    threadId?: string;
+    cc?: string;
+    bcc?: string;
+    replyTo?: string;
+}
+
+export async function fetchEmailById(
+    userId: string,
+    messageId: string
+): Promise<GmailEmailDetail | null> {
+    try {
+        const gmail = await getGmailClient(userId);
+
         const fullMsg = await gmail.users.messages.get({
-          userId: "me",
-          id: msg.id,
-          format: "full",
+            userId: "me",
+            id: messageId,
+            format: "full",
         });
 
         const payload = fullMsg.data.payload;
-        if (!payload) continue;
+        if (!payload) return null;
 
         const headers = payload.headers || [];
         const subject =
-          headers.find((h) => h.name === "Subject")?.value || "(No Subject)";
+            headers.find((h) => h.name === "Subject")?.value || "(No Subject)";
         const from = headers.find((h) => h.name === "From")?.value || "";
         const to = headers.find((h) => h.name === "To")?.value || "";
+        const cc = headers.find((h) => h.name === "Cc")?.value || "";
+        const bcc = headers.find((h) => h.name === "Bcc")?.value || "";
+        const replyTo = headers.find((h) => h.name === "Reply-To")?.value || "";
         const dateStr = headers.find((h) => h.name === "Date")?.value;
         const receivedAt = dateStr ? new Date(dateStr) : new Date();
         const snippet = fullMsg.data.snippet || "";
 
-        emailList.push({
-          id: msg.id, // Using gmailId as id for now
-          gmailId: msg.id,
-          subject,
-          snippet,
-          receivedAt,
-          sender: from,
-          recipient: to,
-          // category and isProcessed will be undefined for direct Gmail fetch
-          // We can optionally enrich from DB if needed
-        });
-      } catch (error) {
-        console.error(`Error fetching message ${msg.id}:`, error);
-        // Continue with next message
-      }
-    }
+        // Extract body text - handle nested parts recursively
+        let body = snippet;
+        let htmlBody: string | undefined;
 
-    // Sort by receivedAt descending
-    emailList.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
+        const extractBodyFromPart = (
+            part: {
+                mimeType?: string | null;
+                body?: { data?: string | null };
+                parts?: Array<{
+                    mimeType?: string | null;
+                    body?: { data?: string | null };
+                    parts?: unknown[];
+                }>;
+            } | null
+        ): void => {
+            if (!part) return;
+            if (part.mimeType === "text/plain" && part.body?.data) {
+                body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            } else if (part.mimeType === "text/html" && part.body?.data) {
+                htmlBody = Buffer.from(part.body.data, "base64").toString("utf-8");
+            } else if (part.parts) {
+                // Recursively process nested parts
+                for (const subPart of part.parts) {
+                    extractBodyFromPart(subPart as typeof part);
+                }
+            }
+        };
 
-    return emailList;
-  } catch (error) {
-    console.error("Error fetching emails from Gmail:", error);
-    throw error;
-  }
-}
-
-export interface GmailEmailDetail extends GmailEmail {
-  body: string;
-  htmlBody?: string;
-  threadId?: string;
-  cc?: string;
-  bcc?: string;
-  replyTo?: string;
-}
-
-export async function fetchEmailById(
-  userId: string,
-  messageId: string
-): Promise<GmailEmailDetail | null> {
-  try {
-    const gmail = await getGmailClient(userId);
-
-    const fullMsg = await gmail.users.messages.get({
-      userId: "me",
-      id: messageId,
-      format: "full",
-    });
-
-    const payload = fullMsg.data.payload;
-    if (!payload) return null;
-
-    const headers = payload.headers || [];
-    const subject =
-      headers.find((h) => h.name === "Subject")?.value || "(No Subject)";
-    const from = headers.find((h) => h.name === "From")?.value || "";
-    const to = headers.find((h) => h.name === "To")?.value || "";
-    const cc = headers.find((h) => h.name === "Cc")?.value || "";
-    const bcc = headers.find((h) => h.name === "Bcc")?.value || "";
-    const replyTo = headers.find((h) => h.name === "Reply-To")?.value || "";
-    const dateStr = headers.find((h) => h.name === "Date")?.value;
-    const receivedAt = dateStr ? new Date(dateStr) : new Date();
-    const snippet = fullMsg.data.snippet || "";
-
-    // Extract body text - handle nested parts recursively
-    let body = snippet;
-    let htmlBody: string | undefined;
-
-    const extractBodyFromPart = (
-      part: {
-        mimeType?: string | null;
-        body?: { data?: string | null };
-        parts?: Array<{
-          mimeType?: string | null;
-          body?: { data?: string | null };
-          parts?: unknown[];
-        }>;
-      } | null
-    ): void => {
-      if (!part) return;
-      if (part.mimeType === "text/plain" && part.body?.data) {
-        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-      } else if (part.mimeType === "text/html" && part.body?.data) {
-        htmlBody = Buffer.from(part.body.data, "base64").toString("utf-8");
-      } else if (part.parts) {
-        // Recursively process nested parts
-        for (const subPart of part.parts) {
-          extractBodyFromPart(subPart as typeof part);
+        if (payload.body?.data) {
+            body = Buffer.from(payload.body.data, "base64").toString("utf-8");
+        } else if (payload.parts) {
+            for (const part of payload.parts) {
+                extractBodyFromPart(part);
+            }
         }
-      }
-    };
 
-    if (payload.body?.data) {
-      body = Buffer.from(payload.body.data, "base64").toString("utf-8");
-    } else if (payload.parts) {
-      for (const part of payload.parts) {
-        extractBodyFromPart(part);
-      }
+        return {
+            id: messageId,
+            gmailId: messageId,
+            subject,
+            snippet,
+            receivedAt,
+            sender: from,
+            recipient: to,
+            body,
+            htmlBody,
+            threadId: fullMsg.data.threadId || undefined,
+            cc: cc || undefined,
+            bcc: bcc || undefined,
+            replyTo: replyTo || undefined,
+        };
+    } catch (error) {
+        console.error(`Error fetching email ${messageId}:`, error);
+        throw error;
     }
-
-    return {
-      id: messageId,
-      gmailId: messageId,
-      subject,
-      snippet,
-      receivedAt,
-      sender: from,
-      recipient: to,
-      body,
-      htmlBody,
-      threadId: fullMsg.data.threadId || undefined,
-      cc: cc || undefined,
-      bcc: bcc || undefined,
-      replyTo: replyTo || undefined,
-    };
-  } catch (error) {
-    console.error(`Error fetching email ${messageId}:`, error);
-    throw error;
-  }
 }

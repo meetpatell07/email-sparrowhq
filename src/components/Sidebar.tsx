@@ -10,13 +10,15 @@ import {
     Settings,
     LifeBuoy,
     ChevronRight,
-    Search
+    Search,
+    Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 
 const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { name: "Categorization", icon: Tag, href: "/dashboard/categories" },
     { name: "Emails", icon: Mail, href: "/dashboard/emails" },
     { name: "Invoices", icon: FileText, href: "/dashboard/invoices" },
     { name: "Drafts", icon: CheckSquare, href: "/dashboard/drafts" },

@@ -11,6 +11,42 @@ import { revalidatePath } from "next/cache";
 
 
 import { processIngestion } from "@/lib/ingest";
+import { classifyEmail } from "@/lib/ai";
+
+export async function classifyIndividualEmail(gmailId: string, subject: string, snippet: string, receivedAt: Date) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    // Try to find if it exists in DB first
+    const existing = await db.select().from(emails).where(eq(emails.gmailId, gmailId)).limit(1);
+
+    let emailId: string;
+    if (existing.length === 0) {
+        // Create it
+        const [inserted] = await db.insert(emails).values({
+            userId: session.user.id,
+            gmailId,
+            subject,
+            snippet,
+            receivedAt,
+            isProcessed: false
+        }).returning({ id: emails.id });
+        emailId = inserted.id;
+    } else {
+        emailId = existing[0].id;
+    }
+
+    const category = await classifyEmail(subject, snippet);
+    await db.update(emails).set({ category, isProcessed: true }).where(eq(emails.id, emailId));
+
+    revalidatePath("/dashboard");
+    return { success: true, category };
+}
 
 // ... existing imports
 

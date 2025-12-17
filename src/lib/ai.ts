@@ -9,7 +9,7 @@ const google = createGoogleGenerativeAI({
 
 // Schemas
 const classificationSchema = z.object({
-    category: z.enum(["personal", "invoice", "client", "urgent"]),
+    category: z.enum(["personal", "invoice", "client", "urgent", "marketing", "notification"]),
 });
 
 const invoiceSchema = z.object({
@@ -24,9 +24,18 @@ export async function classifyEmail(subject: string, snippet: string, body?: str
     const content = `Subject: ${subject}\nSnippet: ${snippet}\nBody: ${body?.slice(0, 1000) || ""}`;
 
     const { object } = await generateObject({
-        model: google("models/gemini-2.5-flash"), // Using explicit models prefix sometimes helps, or just the version alias
+        model: google("models/gemma-3-27b"), // Using explicit models prefix sometimes helps, or just the version alias
         schema: classificationSchema,
-        prompt: `Classify the following email into one of these categories: personal, invoice, client, urgent.\n\n${content}`,
+        prompt: `Classify the following email into exactly one of these categories:
+- personal: One-on-one personal messages or non-business correspondence.
+- invoice: Bills, receipts, or payment-related documents.
+- client: Emails from or related to professional clients or work projects.
+- urgent: Messages requiring immediate attention or expressing high priority.
+- marketing: Newsletters, promotions, or generic marketing content.
+- notification: Automated system updates, social media alerts, or login notifications.
+
+Email Content:
+${content}`,
     });
 
     return object.category;
