@@ -24,7 +24,7 @@ export async function classifyEmail(subject: string, snippet: string, body?: str
     const content = `Subject: ${subject}\nSnippet: ${snippet}\nBody: ${body?.slice(0, 1000) || ""}`;
 
     const { object } = await generateObject({
-        model: google("gemini-1.5-flash"),
+        model: google("models/gemini-2.5-flash"), // Using explicit models prefix sometimes helps, or just the version alias
         schema: classificationSchema,
         prompt: `Classify the following email into one of these categories: personal, invoice, client, urgent.\n\n${content}`,
     });
@@ -36,7 +36,7 @@ export async function extractInvoiceData(subject: string, body: string) {
     const content = `Subject: ${subject}\nBody: ${body.slice(0, 3000)}`;
 
     const { object } = await generateObject({
-        model: google("gemini-1.5-flash"),
+        model: google("models/gemini-1.5-flash-latest"),
         schema: invoiceSchema,
         prompt: `Analyze this email. If it is an invoice, extract the vendor name, amount, currency, and due date. If not, set isInvoice to false.\n\n${content}`,
     });
@@ -48,7 +48,7 @@ export async function generateDraftReply(subject: string, body: string, sender: 
     const content = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
 
     const { text } = await generateText({
-        model: google("gemini-1.5-flash"),
+        model: google("models/gemini-1.5-flash-latest"),
         prompt: `Draft a short, professional reply to this urgent email. Keep it neutral and polite. 2-4 sentences max.\n\n${content}`,
     });
 
