@@ -59,6 +59,14 @@ export const auth = betterAuth({
                 // We need offline access to get refresh token.
             ],
             accessType: "offline",
+            prompt: "consent", // Force consent
+            authorization: {
+                params: {
+                    prompt: "consent",
+                    access_type: "offline",
+                    response_type: "code"
+                }
+            }
         },
     },
     // We might need hooks to encrypt the refresh token if Better Auth doesn't support it natively.

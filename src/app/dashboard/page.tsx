@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { emails, drafts, invoices } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { DraftApprovalList } from "@/components/DraftApprovalList";
+import { SyncButton } from "@/components/SyncButton";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function DashboardPage() {
     const session = await auth.api.getSession({
@@ -46,8 +48,9 @@ export default async function DashboardPage() {
             <header className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
                 <div className="flex items-center gap-4">
+                    <SyncButton />
                     <span>{session.user.email}</span>
-                    {/* SignOut button would go here */}
+                    <SignOutButton />
                 </div>
             </header>
 

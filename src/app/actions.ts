@@ -9,6 +9,43 @@ import { eq, and } from "drizzle-orm";
 import { getGmailClient } from "@/lib/gmail";
 import { revalidatePath } from "next/cache";
 
+
+import { processIngestion } from "@/lib/ingest";
+
+// ... existing imports
+
+export async function signOutAndClearTokens() {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (session) {
+        // Clear tokens from account table
+        await db.update(account).set({
+            accessToken: null,
+            refreshToken: null,
+            accessTokenExpiresAt: null,
+            refreshTokenExpiresAt: null,
+        }).where(eq(account.userId, session.user.id));
+    }
+
+    return { success: true };
+}
+
+export async function syncEmails() {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const results = await processIngestion(session.user.id);
+    revalidatePath("/dashboard");
+    return { success: true, count: results.length };
+}
+
 export async function approveDraft(draftId: string) {
     const session = await auth.api.getSession({
         headers: await headers()
