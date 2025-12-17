@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import { EmailRow } from "@/components/EmailRow";
 import { GmailEmail } from "@/lib/gmail";
+import { SignOutButton } from "@/components/SignOutButton";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -37,6 +38,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
+      <header className="flex items-center justify-between p-4 border-b">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <SignOutButton />
+      </header>
       <section className="p-6">
         {parsedEmails.length === 0 ? (
           <div className="py-4 text-center text-muted-foreground">
