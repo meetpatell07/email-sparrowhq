@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { fetchEmailsFromGmail } from "@/lib/gmail";
+import { processIngestion } from "@/lib/ingest";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -15,6 +16,12 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
+
+    // Run ingestion in background to process new emails (classification + auto-drafts)
+    // Don't await to avoid blocking the response
+    processIngestion(session.user.id).catch((err) => {
+      console.error("Background ingestion error:", err);
+    });
 
     const emails = await fetchEmailsFromGmail(session.user.id, limit);
 

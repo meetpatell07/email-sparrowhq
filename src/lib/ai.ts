@@ -1,10 +1,7 @@
-import { generateObject, generateText } from "ai";
-import { createGroq } from "@ai-sdk/groq";
 import { z } from "zod";
 
-const groq = createGroq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
+const MODEL = "gemini-3-flash-preview:cloud";
 
 // Schemas
 const classificationSchema = z.object({
@@ -16,15 +13,34 @@ const invoiceSchema = z.object({
     vendorName: z.string().nullable().optional(),
     amount: z.number().nullable().optional(),
     currency: z.string().nullable().optional(),
-    dueDate: z.string().nullable().optional(), // ISO date string
+    dueDate: z.string().nullable().optional(),
 });
+
+async function callOllama(prompt: string): Promise<string> {
+    const response = await fetch(OLLAMA_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            model: MODEL,
+            prompt,
+            stream: false,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.response || "";
+}
 
 async function parseJSONObject(text: string) {
     try {
-        // Try direct parse
         return JSON.parse(text);
     } catch (e) {
-        // Try cleaning up common Markdown junk
         const match = text.match(/\{[\s\S]*\}/);
         if (match) {
             return JSON.parse(match[0]);
@@ -35,10 +51,7 @@ async function parseJSONObject(text: string) {
 
 export async function classifyEmail(subject: string, snippet: string, body?: string) {
     const content = `Subject: ${subject}\nSnippet: ${snippet}\nBody: ${body?.slice(0, 1000) || ""}`;
-
-    const { text } = await generateText({
-        model: groq("llama-3.3-70b-versatile"),
-        prompt: `Classify the following email into exactly one of these categories:
+    const prompt = `Classify the following email into exactly one of these categories:
 - personal: One-on-one personal messages or non-business correspondence.
 - invoice: Bills, receipts, or payment-related documents.
 - client: Emails from or related to professional clients or work projects.
@@ -49,9 +62,9 @@ export async function classifyEmail(subject: string, snippet: string, body?: str
 Return ONLY a JSON object: { "category": "one_of_the_above" }
 
 Email Content:
-${content}`,
-    });
+${content}`;
 
+    const text = await callOllama(prompt);
     const parsedData = await parseJSONObject(text);
     const validated = classificationSchema.parse(parsedData);
     return validated.category;
@@ -59,10 +72,7 @@ ${content}`,
 
 export async function extractInvoiceData(subject: string, body: string) {
     const content = `Subject: ${subject}\nBody: ${body.slice(0, 3000)}`;
-
-    const { text } = await generateText({
-        model: groq("llama-3.3-70b-versatile"),
-        prompt: `Analyze this email. If it is an invoice, extract the vendor name, amount, currency, and due date. If not, set isInvoice to false.
+    const prompt = `Analyze this email. If it is an invoice, extract the vendor name, amount, currency, and due date. If not, set isInvoice to false.
 
 Return ONLY a JSON object matching this schema:
 {
@@ -74,23 +84,19 @@ Return ONLY a JSON object matching this schema:
 }
 
 Email Content:
-${content}`,
-    });
+${content}`;
 
+    const text = await callOllama(prompt);
     const parsedData = await parseJSONObject(text);
     return invoiceSchema.parse(parsedData);
 }
 
 export async function generateDraftReply(subject: string, body: string, sender: string) {
     const content = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
-
-    const { text } = await generateText({
-        model: groq("llama-3.1-8b-instant"),
-        prompt: `Draft a short, professional reply to this urgent email. Keep it neutral and polite. 2-4 sentences max.
+    const prompt = `Draft a short, professional reply to this email. Keep it neutral and polite. 2-4 sentences max.
 
 Email Content:
-${content}`,
-    });
+${content}`;
 
-    return text;
+    return await callOllama(prompt);
 }

@@ -255,3 +255,49 @@ export async function fetchEmailById(
         throw error;
     }
 }
+
+/**
+ * Create a draft email in the user's Gmail account
+ */
+export async function createGmailDraft(
+    userId: string,
+    to: string,
+    subject: string,
+    body: string,
+    threadId?: string
+): Promise<string> {
+    const gmail = await getGmailClient(userId);
+
+    // Construct the email in RFC 2822 format
+    const email = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        `Content-Type: text/plain; charset="UTF-8"`,
+        `MIME-Version: 1.0`,
+        ``,
+        body
+    ].join("\r\n");
+
+    // Base64url encode the email
+    const encodedMessage = Buffer.from(email)
+        .toString("base64")
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+    const response = await gmail.users.drafts.create({
+        userId: 'me',
+        requestBody: {
+            message: {
+                raw: encodedMessage,
+                threadId: threadId || undefined,
+            }
+        }
+    });
+
+    if (!response.data.id) {
+        throw new Error("Failed to create Gmail draft");
+    }
+
+    return response.data.id;
+}

@@ -91,6 +91,7 @@ export const invoices = pgTable("invoices", {
 export const drafts = pgTable("drafts", {
     id: uuid("id").defaultRandom().primaryKey(),
     emailId: uuid("emailId").notNull().references(() => emails.id, { onDelete: 'cascade' }),
+    gmailDraftId: text("gmailDraftId"), // ID of the draft in Gmail
     content: text("content").notNull(),
     status: text("status").default("pending_approval"), // pending_approval, approved, sent, rejected
     createdAt: timestamp("createdAt").defaultNow(),

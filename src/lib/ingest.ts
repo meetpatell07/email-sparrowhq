@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 import { account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { getGmailClient } from "@/lib/gmail";
+import { getGmailClient, createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -144,13 +144,32 @@ export async function processIngestion(specificUserId?: string) {
                     }
                 }
 
-                if (category === 'urgent') {
-                    const draft = await generateDraftReply(subject, body, from);
-                    await db.insert(drafts).values({
-                        emailId: emailRecord.id,
-                        content: draft,
-                        status: 'pending_approval'
-                    });
+                // Auto-draft for client and urgent emails
+                if (category === 'urgent' || category === 'client') {
+                    try {
+                        const draftContent = await generateDraftReply(subject, body, from);
+
+                        // Create draft in Gmail
+                        const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
+                        const gmailDraftId = await createGmailDraft(
+                            acc.userId,
+                            from, // Reply to sender
+                            replySubject,
+                            draftContent,
+                            fullMsg.data.threadId || undefined
+                        );
+
+                        // Store in our database
+                        await db.insert(drafts).values({
+                            emailId: emailRecord.id,
+                            gmailDraftId,
+                            content: draftContent,
+                            status: 'pending_approval'
+                        });
+                    } catch (draftError) {
+                        console.error(`Failed to create auto-draft for email ${msg.id}:`, draftError);
+                        // Continue processing other emails even if draft fails
+                    }
                 }
 
                 results.push({ id: msg.id, category });

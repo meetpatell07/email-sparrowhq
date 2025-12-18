@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { EmailRow } from "@/components/EmailRow";
 import { GmailEmail } from "@/lib/gmail";
 import { Sidebar } from "@/components/Sidebar";
-import { SyncButton } from "@/components/SyncButton";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -29,9 +28,6 @@ export default function DashboardPage() {
         {/* Top Header */}
         <header className="h-16 flex items-center justify-between px-8 border-b border-gray-50 flex-shrink-0">
           <h1 className="text-xl font-semibold text-black">Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <SyncButton />
-          </div>
         </header>
 
         {/* Content Area */}
@@ -56,7 +52,7 @@ export default function DashboardPage() {
                 </div>
               ) : parsedEmails.length === 0 ? (
                 <div className="py-20 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                  <p className="text-gray-400 font-medium whitespace-pre-wrap">No emails found.\nTry syncing your account.</p>
+                  <p className="text-gray-400 font-medium">No emails found.</p>
                 </div>
               ) : (
                 parsedEmails.map((email) => <EmailRow key={email.id} email={email} />)
