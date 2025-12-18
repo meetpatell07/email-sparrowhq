@@ -53,10 +53,10 @@ export const auth = betterAuth({
                 "email",
                 "profile",
                 "https://www.googleapis.com/auth/gmail.readonly",
-                "https://www.googleapis.com/auth/gmail.compose", // For drafts
-                // "https://www.googleapis.com/auth/gmail.modify"? Drafts creation usually needs compose.
-                // Instruction says: "Reads incoming emails", "Drafts replies", "Connects to user's Gmail".
-                // We need offline access to get refresh token.
+                "https://www.googleapis.com/auth/gmail.compose",
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/calendar.readonly",
+                "https://www.googleapis.com/auth/calendar.events",
             ],
             accessType: "offline",
             prompt: "consent", // Force consent
