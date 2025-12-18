@@ -152,8 +152,10 @@ export async function discardDraft(draftId: string) {
 
     if (exists.length === 0) throw new Error("Draft not found");
 
-    await db.update(drafts).set({ status: 'rejected' }).where(eq(drafts.id, draftId));
-    revalidatePath("/dashboard");
+    // Delete the draft
+    await db.delete(drafts).where(eq(drafts.id, draftId));
+    revalidatePath("/dashboard/drafts");
+    return { success: true };
 }
 
 

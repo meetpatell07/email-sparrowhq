@@ -3,7 +3,9 @@
 import useSWR from "swr";
 import { Sidebar } from "@/components/Sidebar";
 import { format } from "date-fns";
-import { FileText, Mail, Check, X, ExternalLink } from "lucide-react";
+import { FileText, Mail, Check, X, ExternalLink, Loader2 } from "lucide-react";
+import { discardDraft } from "@/app/actions";
+import { useState } from "react";
 
 interface Draft {
     id: string;
@@ -27,10 +29,11 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function DraftsPage() {
-    const { data, error, isLoading } = useSWR<{ drafts: Draft[] }>(
+    const { data, error, isLoading, mutate } = useSWR<{ drafts: Draft[] }>(
         "/api/drafts",
         fetcher
     );
+    const [discardingId, setDiscardingId] = useState<string | null>(null);
 
     const drafts = data?.drafts || [];
 
@@ -41,6 +44,18 @@ export default function DraftsPage() {
             return match[3] || match[1].trim().replace(/^"(.+)"$/, "$1");
         }
         return sender;
+    };
+
+    const handleDiscard = async (draftId: string) => {
+        setDiscardingId(draftId);
+        try {
+            await discardDraft(draftId);
+            mutate(); // Refresh the list
+        } catch (e) {
+            console.error("Failed to discard draft:", e);
+        } finally {
+            setDiscardingId(null);
+        }
     };
 
     return (
@@ -80,6 +95,7 @@ export default function DraftsPage() {
                             ) : (
                                 drafts.map((draft) => {
                                     const colors = statusColors[draft.status] || statusColors.pending_approval;
+                                    const isDiscarding = discardingId === draft.id;
                                     return (
                                         <div
                                             key={draft.id}
@@ -131,8 +147,16 @@ export default function DraftsPage() {
                                                             <Check className="w-4 h-4" />
                                                             Approve & Send
                                                         </button>
-                                                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
-                                                            <X className="w-4 h-4" />
+                                                        <button
+                                                            onClick={() => handleDiscard(draft.id)}
+                                                            disabled={isDiscarding}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                        >
+                                                            {isDiscarding ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <X className="w-4 h-4" />
+                                                            )}
                                                             Discard
                                                         </button>
                                                     </div>
