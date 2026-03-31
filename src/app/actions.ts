@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { drafts, emails, account } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getGmailClient } from "@/lib/gmail";
+import { getGmailClient, applyGmailLabel } from "@/lib/gmail";
 import { revalidatePath } from "next/cache";
 
 
@@ -43,6 +43,9 @@ export async function classifyIndividualEmail(gmailId: string, subject: string, 
 
     const category = await classifyEmail(subject, snippet);
     await db.update(emails).set({ category, isProcessed: true }).where(eq(emails.id, emailId));
+
+    // Apply Gmail label in the background
+    applyGmailLabel(session.user.id, gmailId, category).catch(console.error);
 
     revalidatePath("/dashboard");
     return { success: true, category };

@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { createGroq } from "@ai-sdk/groq";
+import { generateText } from "ai";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
-const MODEL = "gemini-3-flash-preview:cloud";
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+const MODEL = "llama-3.1-8b-instant";
 
-// Schemas
+// ─── Schemas ───────────────────────────────────────────────────────────────
 const classificationSchema = z.object({
     category: z.enum(["personal", "invoice", "client", "urgent", "marketing", "notification"]),
 });
@@ -16,39 +18,27 @@ const invoiceSchema = z.object({
     dueDate: z.string().nullable().optional(),
 });
 
-async function callOllama(prompt: string): Promise<string> {
-    const response = await fetch(OLLAMA_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            model: MODEL,
-            prompt,
-            stream: false,
-        }),
+// ─── Core helper ───────────────────────────────────────────────────────────
+async function callGroq(prompt: string): Promise<string> {
+    const { text } = await generateText({
+        model: groq(MODEL),
+        prompt,
+        maxOutputTokens: 512,
     });
-
-    if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.response || "";
+    return text;
 }
 
-async function parseJSONObject(text: string) {
+function parseJSONObject(text: string): unknown {
     try {
         return JSON.parse(text);
-    } catch (e) {
+    } catch {
         const match = text.match(/\{[\s\S]*\}/);
-        if (match) {
-            return JSON.parse(match[0]);
-        }
-        throw e;
+        if (match) return JSON.parse(match[0]);
+        throw new Error(`Could not parse JSON from: ${text.slice(0, 200)}`);
     }
 }
 
+// ─── Public API ────────────────────────────────────────────────────────────
 export async function classifyEmail(subject: string, snippet: string, body?: string) {
     const content = `Subject: ${subject}\nSnippet: ${snippet}\nBody: ${body?.slice(0, 1000) || ""}`;
     const prompt = `Classify the following email into exactly one of these categories:
@@ -64,9 +54,9 @@ Return ONLY a JSON object: { "category": "one_of_the_above" }
 Email Content:
 ${content}`;
 
-    const text = await callOllama(prompt);
-    const parsedData = await parseJSONObject(text);
-    const validated = classificationSchema.parse(parsedData);
+    const text = await callGroq(prompt);
+    const parsed = parseJSONObject(text);
+    const validated = classificationSchema.parse(parsed);
     return validated.category;
 }
 
@@ -74,29 +64,30 @@ export async function extractInvoiceData(subject: string, body: string) {
     const content = `Subject: ${subject}\nBody: ${body.slice(0, 3000)}`;
     const prompt = `Analyze this email. If it is an invoice, extract the vendor name, amount, currency, and due date. If not, set isInvoice to false.
 
-Return ONLY a JSON object matching this schema:
+Return ONLY a JSON object:
 {
-    "isInvoice": boolean,
-    "vendorName": string or null,
-    "amount": number or null,
-    "currency": string or null,
-    "dueDate": string or null (ISO format)
+  "isInvoice": boolean,
+  "vendorName": string or null,
+  "amount": number or null,
+  "currency": string or null,
+  "dueDate": string or null (ISO format)
 }
 
 Email Content:
 ${content}`;
 
-    const text = await callOllama(prompt);
-    const parsedData = await parseJSONObject(text);
-    return invoiceSchema.parse(parsedData);
+    const text = await callGroq(prompt);
+    const parsed = parseJSONObject(text);
+    return invoiceSchema.parse(parsed);
 }
 
-export async function generateDraftReply(subject: string, body: string, sender: string) {
+export async function generateDraftReply(subject: string, body: string, sender: string, calendarContext?: string) {
     const content = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
-    const prompt = `Draft a short, professional reply to this email. Keep it neutral and polite. 2-4 sentences max.
+    const calPart = calendarContext ? `\n\nYour availability for context:\n${calendarContext}` : "";
+    const prompt = `Draft a short, professional reply to this email. Keep it neutral, polite, and concise — 2-4 sentences maximum. Do not add a subject line or headers.${calPart}
 
 Email Content:
 ${content}`;
 
-    return await callOllama(prompt);
+    return callGroq(prompt);
 }

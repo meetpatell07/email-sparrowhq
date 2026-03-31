@@ -3,7 +3,8 @@
 import { Sidebar } from "@/components/Sidebar";
 import { AIChatPanel } from "@/components/AIChatPanel";
 import { useState } from "react";
-import { MessageSquare, X } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { BubbleChatIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -13,30 +14,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const [isChatOpen, setIsChatOpen] = useState(true);
 
     return (
-        <div className="flex h-screen bg-white font-sans overflow-hidden">
-            {/* Left: Sidebar */}
+        <div className="flex h-screen bg-[#FAFAF9] overflow-hidden">
             <Sidebar />
 
-            {/* Middle: Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {children}
             </main>
 
-            {/* Right: AI Chat Panel */}
             {isChatOpen ? (
-                <aside className="w-96 h-screen flex flex-col bg-gray-50 border-l border-gray-100">
-                    <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                <MessageSquare className="w-4 h-4 text-white" />
+                <aside className="w-[340px] h-screen flex flex-col bg-white border-l border-[#E7E5E4] shrink-0">
+                    <div className="h-16 flex items-center justify-between px-5 border-b border-[#E7E5E4] shrink-0">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 bg-[#1C1917] rounded-md flex items-center justify-center">
+                                <HugeiconsIcon icon={BubbleChatIcon} size={14} className="text-white" />
                             </div>
-                            <span className="font-semibold text-gray-900">AI Assistant</span>
+                            <span className="text-[14px] font-semibold text-[#1C1917]">AI Assistant</span>
                         </div>
                         <button
                             onClick={() => setIsChatOpen(false)}
-                            className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
+                            aria-label="Close chat"
                         >
-                            <X className="w-4 h-4 text-gray-400" />
+                            <HugeiconsIcon icon={Cancel01Icon} size={16} className="text-[#78716C]" />
                         </button>
                     </div>
                     <AIChatPanel />
@@ -44,9 +43,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             ) : (
                 <button
                     onClick={() => setIsChatOpen(true)}
-                    className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    className="fixed bottom-6 right-6 w-12 h-12 bg-[#1C1917] rounded-md flex items-center justify-center shadow-md hover:bg-[#292524] transition-colors"
+                    aria-label="Open AI chat"
                 >
-                    <MessageSquare className="w-6 h-6 text-white" />
+                    <HugeiconsIcon icon={BubbleChatIcon} size={18} className="text-white" />
                 </button>
             )}
         </div>

@@ -3,7 +3,15 @@
 import useSWR from "swr";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { format } from "date-fns";
-import { FileText, Mail, Check, X, ExternalLink, Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+    CheckmarkSquare01Icon,
+    Mail01Icon,
+    Tick01Icon,
+    Cancel01Icon,
+    ArrowUpRight01Icon,
+    Loading03Icon,
+} from "@hugeicons/core-free-icons";
 import { discardDraft } from "@/app/actions";
 import { useState } from "react";
 
@@ -19,32 +27,30 @@ interface Draft {
     emailSnippet: string | null;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const statusColors: Record<string, { bg: string; text: string }> = {
-    pending_approval: { bg: "bg-yellow-100", text: "text-yellow-700" },
-    approved: { bg: "bg-blue-100", text: "text-blue-700" },
-    sent: { bg: "bg-green-100", text: "text-green-700" },
-    rejected: { bg: "bg-red-100", text: "text-red-700" },
+const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
+    pending_approval: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]", label: "Pending" },
+    approved:         { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]", label: "Approved" },
+    sent:             { bg: "bg-[#ECFDF5]", text: "text-[#059669]", label: "Sent" },
+    rejected:         { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]", label: "Rejected" },
 };
 
+function parseSenderName(sender: string | null): string {
+    if (!sender) return "Unknown";
+    const match = sender.match(/^(.+?)\s*<(.+?)>$|^(.+)$/);
+    if (match) {
+        const name = match[3] ?? match[1].trim();
+        return name.replace(/^"(.+)"$/, "$1");
+    }
+    return sender;
+}
+
 export default function DraftsPage() {
-    const { data, error, isLoading, mutate } = useSWR<{ drafts: Draft[] }>(
-        "/api/drafts",
-        fetcher
-    );
+    const { data, error, isLoading, mutate } = useSWR<{ drafts: Draft[] }>("/api/drafts", fetcher);
     const [discardingId, setDiscardingId] = useState<string | null>(null);
 
-    const drafts = data?.drafts || [];
-
-    const parseSenderName = (sender: string | null) => {
-        if (!sender) return "Unknown";
-        const match = sender.match(/^(.+?)\s*<(.+?)>$|^(.+)$/);
-        if (match) {
-            return match[3] || match[1].trim().replace(/^"(.+)"$/, "$1");
-        }
-        return sender;
-    };
+    const drafts = data?.drafts ?? [];
 
     const handleDiscard = async (draftId: string) => {
         setDiscardingId(draftId);
@@ -60,100 +66,106 @@ export default function DraftsPage() {
 
     return (
         <DashboardLayout>
-            <header className="h-16 flex items-center justify-between px-8 border-b border-gray-50 flex-shrink-0">
-                <h1 className="text-xl font-semibold text-black">Auto-Drafts</h1>
+            <header className="h-16 flex items-center justify-between px-6 border-b border-[#E7E5E4] bg-white shrink-0">
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
+                    <span className="text-[#E7E5E4]">/</span>
+                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">AI Drafts</span>
+                </div>
+                {!isLoading && !error && (
+                    <span className="text-[12px] text-[#A8A29E]">{drafts.length} drafts</span>
+                )}
             </header>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-                <div className="p-8 max-w-5xl mx-auto w-full">
-                    <div className="mb-8">
-                        <h2 className="text-2xl text-gray-900 font-bold mb-2">AI-Generated Drafts</h2>
-                        <p className="text-gray-400 text-sm font-medium leading-none">
-                            {drafts.length} drafts pending review
-                        </p>
+            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+                <div className="p-6 max-w-5xl mx-auto">
+
+                    <div className="mb-4">
+                        <h1 className="text-[22px] font-semibold text-[#1C1917]">AI-Generated Drafts</h1>
+                        <p className="text-[13px] text-[#78716C] mt-1">Review and approve replies before they're sent</p>
                     </div>
 
-                    <section className="space-y-4 pb-8">
+                    <div className="space-y-3 pb-8">
                         {isLoading ? (
-                            <div className="py-20 text-center">
-                                <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                                <p className="text-gray-400 font-medium">Loading drafts...</p>
+                            <div className="py-20 flex flex-col items-center gap-3 bg-white border border-[#E7E5E4] rounded-[2px]">
+                                <HugeiconsIcon icon={Loading03Icon} size={22} className="animate-spin text-[#A8A29E]" />
+                                <p className="text-[13px] text-[#78716C]">Loading drafts…</p>
                             </div>
                         ) : error ? (
-                            <div className="py-20 text-center text-red-500 font-medium">
-                                Failed to load drafts. Please try again.
+                            <div className="py-20 text-center bg-white border border-[#E7E5E4] rounded-[2px]">
+                                <p className="text-[14px] font-medium text-[#DC2626]">Failed to load drafts.</p>
                             </div>
                         ) : drafts.length === 0 ? (
-                            <div className="py-20 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-400 font-medium">No auto-drafts yet.</p>
-                                <p className="text-gray-300 text-sm mt-1">Drafts will appear here when you receive client or urgent emails.</p>
+                            <div className="py-20 flex flex-col items-center gap-3 bg-white border border-[#E7E5E4] rounded-[2px]">
+                                <HugeiconsIcon icon={CheckmarkSquare01Icon} size={28} className="text-[#E7E5E4]" />
+                                <p className="text-[14px] font-medium text-[#1C1917]">No drafts yet</p>
+                                <p className="text-[13px] text-[#78716C]">Drafts appear when you receive client or urgent emails.</p>
                             </div>
                         ) : (
                             drafts.map((draft) => {
-                                const colors = statusColors[draft.status] || statusColors.pending_approval;
+                                const style = statusStyles[draft.status] ?? statusStyles.pending_approval;
                                 const isDiscarding = discardingId === draft.id;
+
                                 return (
-                                    <div
-                                        key={draft.id}
-                                        className="p-5 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all duration-200 bg-white"
-                                    >
+                                    <div key={draft.id} className="bg-white border border-[#E7E5E4] rounded-[2px] p-5">
+                                        {/* Header */}
                                         <div className="flex items-start justify-between gap-4 mb-3">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Mail className="w-4 h-4 text-gray-400" />
-                                                    <span className="text-sm font-medium text-gray-900 truncate">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <HugeiconsIcon icon={Mail01Icon} size={14} className="text-[#A8A29E] shrink-0" />
+                                                    <span className="text-[14px] font-medium text-[#1C1917] truncate">
                                                         {parseSenderName(draft.emailSender)}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-gray-500 truncate">
+                                                <p className="text-[13px] text-[#78716C] truncate pl-[22px]">
                                                     {draft.emailSubject || "(No Subject)"}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${colors.bg} ${colors.text}`}>
-                                                    {draft.status.replace("_", " ")}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-[2px] ${style.bg} ${style.text}`}>
+                                                    {style.label}
                                                 </span>
                                                 {draft.gmailDraftId && (
                                                     <a
                                                         href="https://mail.google.com/mail/u/0/#drafts"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                                                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
                                                         title="Open in Gmail"
                                                     >
-                                                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                                                        <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} className="text-[#A8A29E]" />
                                                     </a>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="bg-gray-50 rounded-xl p-4 mb-3">
-                                            <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-4">
+                                        {/* Draft content */}
+                                        <div className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-[2px] px-4 py-3 mb-3">
+                                            <p className="text-[13px] text-[#1C1917] whitespace-pre-wrap line-clamp-4 leading-relaxed">
                                                 {draft.content}
                                             </p>
                                         </div>
 
+                                        {/* Footer */}
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs text-gray-400">
+                                            <span className="text-[12px] text-[#A8A29E]">
                                                 {draft.createdAt && format(new Date(draft.createdAt), "MMM d, yyyy 'at' h:mm a")}
                                             </span>
                                             {draft.status === "pending_approval" && (
                                                 <div className="flex items-center gap-2">
-                                                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 text-green-600 text-sm font-medium hover:bg-green-100 transition-colors">
-                                                        <Check className="w-4 h-4" />
-                                                        Approve & Send
+                                                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#ECFDF5] text-[#059669] text-[13px] font-medium hover:bg-[#D1FAE5] transition-colors">
+                                                        <HugeiconsIcon icon={Tick01Icon} size={13} />
+                                                        Approve
                                                     </button>
                                                     <button
                                                         onClick={() => handleDiscard(draft.id)}
                                                         disabled={isDiscarding}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#FEF2F2] text-[#DC2626] text-[13px] font-medium hover:bg-[#FEE2E2] transition-colors disabled:opacity-50"
                                                     >
-                                                        {isDiscarding ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <X className="w-4 h-4" />
-                                                        )}
+                                                        {isDiscarding
+                                                            ? <HugeiconsIcon icon={Loading03Icon} size={13} className="animate-spin" />
+                                                            : <HugeiconsIcon icon={Cancel01Icon} size={13} />
+                                                        }
                                                         Discard
                                                     </button>
                                                 </div>
@@ -163,7 +175,7 @@ export default function DraftsPage() {
                                 );
                             })
                         )}
-                    </section>
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

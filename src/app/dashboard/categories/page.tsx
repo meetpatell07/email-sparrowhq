@@ -1,75 +1,70 @@
 "use client";
 
-import { Sidebar } from "@/components/Sidebar";
-import { Tag, CheckCircle } from "lucide-react";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Tag01Icon, SparklesIcon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
 
 const categories = [
-    { name: "Personal", color: "bg-blue-100 text-blue-700", description: "Personal emails and correspondence" },
-    { name: "Invoice", color: "bg-green-100 text-green-700", description: "Bills, receipts, and payment requests" },
-    { name: "Client", color: "bg-purple-100 text-purple-700", description: "Communications from clients" },
-    { name: "Urgent", color: "bg-red-100 text-red-700", description: "Emails requiring immediate attention" },
-    { name: "Marketing", color: "bg-pink-100 text-pink-700", description: "Newsletters and promotional content" },
-    { name: "Notification", color: "bg-yellow-100 text-yellow-700", description: "Automated updates and alerts" },
+    { name: "Personal",     dot: "#1D4ED8", bg: "bg-[#EFF6FF]",  text: "text-[#1D4ED8]",  description: "Personal emails and correspondence" },
+    { name: "Invoice",      dot: "#059669", bg: "bg-[#ECFDF5]",  text: "text-[#059669]",  description: "Bills, receipts, and payment requests" },
+    { name: "Client",       dot: "#7C3AED", bg: "bg-[#F5F3FF]",  text: "text-[#7C3AED]",  description: "Communications from clients" },
+    { name: "Urgent",       dot: "#DC2626", bg: "bg-[#FEF2F2]",  text: "text-[#DC2626]",  description: "Emails requiring immediate attention" },
+    { name: "Marketing",    dot: "#BE123C", bg: "bg-[#FFF1F2]",  text: "text-[#BE123C]",  description: "Newsletters and promotional content" },
+    { name: "Notification", dot: "#D97706", bg: "bg-[#FFFBEB]",  text: "text-[#D97706]",  description: "Automated updates and alerts" },
 ];
 
 export default function CategoriesPage() {
     return (
-        <div className="flex h-screen bg-white font-sans overflow-hidden">
-            <Sidebar />
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-16 flex items-center justify-between px-8 border-b border-gray-100 flex-shrink-0">
-                    <h1 className="text-xl font-semibold text-black">Categorization</h1>
-                </header>
-                <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-                    <div className="max-w-3xl mx-auto">
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Categories</h2>
-                            <p className="text-gray-500 text-sm">
-                                AI automatically categorizes your emails using these labels.
-                            </p>
-                        </div>
+        <DashboardLayout>
+            <header className="h-16 flex items-center px-6 border-b border-[#E7E5E4] bg-white shrink-0">
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
+                    <span className="text-[#E7E5E4]">/</span>
+                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">Categories</span>
+                </div>
+            </header>
 
-                        <div className="bg-gray-50 rounded-2xl p-4 mb-8 border border-gray-100">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                    <Tag className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-700 font-medium">
-                                        Automatic Classification
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        When you sync emails, AI analyzes content and assigns one of the categories below.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+                <div className="p-6 max-w-3xl mx-auto">
 
-                        <div className="space-y-3">
-                            {categories.map((category) => (
-                                <div
-                                    key={category.name}
-                                    className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-all"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${category.color}`}>
-                                            {category.name}
-                                        </span>
-                                        <span className="text-sm text-gray-500">{category.description}</span>
-                                    </div>
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                </div>
-                            ))}
-                        </div>
+                    <div className="mb-4">
+                        <h1 className="text-[22px] font-semibold text-[#1C1917]">Email Categories</h1>
+                        <p className="text-[13px] text-[#78716C] mt-1">AI automatically assigns one of these labels to each email</p>
+                    </div>
 
-                        <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                            <p className="text-sm text-gray-500 text-center">
-                                Categories are automatically applied during email sync. No manual setup needed.
+                    {/* Info card */}
+                    <div className="bg-white border border-[#E7E5E4] rounded-[2px] p-4 mb-4 flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-[2px] bg-[#EA580C18] flex items-center justify-center shrink-0">
+                            <HugeiconsIcon icon={SparklesIcon} size={16} className="text-[#EA580C]" />
+                        </div>
+                        <div>
+                            <p className="text-[14px] font-medium text-[#1C1917]">Automatic Classification</p>
+                            <p className="text-[13px] text-[#78716C] mt-0.5 leading-relaxed">
+                                When you sync emails, the AI analyzes content and assigns one category below. No manual setup needed.
                             </p>
                         </div>
                     </div>
+
+                    {/* Category list */}
+                    <div className="bg-white border border-[#E7E5E4] rounded-[2px] overflow-hidden">
+                        {categories.map((cat, i) => (
+                            <div
+                                key={cat.name}
+                                className={`flex items-center justify-between px-5 py-4 ${i < categories.length - 1 ? "border-b border-[#E7E5E4]" : ""}`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 text-[11px] font-medium rounded-[2px] ${cat.bg} ${cat.text}`}>
+                                        {cat.name}
+                                    </span>
+                                    <span className="text-[13px] text-[#78716C]">{cat.description}</span>
+                                </div>
+                                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-[#059669] shrink-0" />
+                            </div>
+                        ))}
+                    </div>
+
                 </div>
-            </main>
-        </div>
+            </div>
+        </DashboardLayout>
     );
 }

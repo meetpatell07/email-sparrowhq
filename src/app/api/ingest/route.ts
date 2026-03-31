@@ -2,8 +2,6 @@
 import { NextResponse } from "next/server";
 import { processIngestion } from "@/lib/ingest";
 
-export const maxDuration = 60;
-
 export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {

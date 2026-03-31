@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";

@@ -3,7 +3,15 @@
 import useSWR from "swr";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { format, isSameDay, addDays, startOfWeek } from "date-fns";
-import { Calendar as CalendarIcon, Clock, MapPin, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+    Calendar01Icon,
+    Clock01Icon,
+    Location01Icon,
+    ArrowLeft01Icon,
+    ArrowRight01Icon,
+    Loading03Icon,
+} from "@hugeicons/core-free-icons";
 import { useState } from "react";
 
 interface CalendarEvent {
@@ -16,7 +24,7 @@ interface CalendarEvent {
     attendees?: string[];
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function CalendarPage() {
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,52 +37,56 @@ export default function CalendarPage() {
         fetcher
     );
 
-    const events = data?.events || [];
-
+    const events = data?.events ?? [];
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
-    const getEventsForDay = (date: Date) => {
-        return events.filter((event) => isSameDay(new Date(event.start), date));
-    };
+    const getEventsForDay = (date: Date) =>
+        events.filter((e) => isSameDay(new Date(e.start), date));
 
     return (
         <DashboardLayout>
-            <header className="h-16 flex items-center justify-between px-8 border-b border-gray-50 flex-shrink-0">
-                <h1 className="text-xl font-semibold text-black">Calendar</h1>
+            <header className="h-16 flex items-center justify-between px-6 border-b border-[#E7E5E4] bg-white shrink-0">
                 <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
+                    <span className="text-[#E7E5E4]">/</span>
+                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">Calendar</span>
+                </div>
+                <div className="flex items-center gap-1">
                     <button
                         onClick={() => setSelectedDate((d) => addDays(d, -7))}
-                        className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
+                        aria-label="Previous week"
                     >
-                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                        <HugeiconsIcon icon={ArrowLeft01Icon} size={15} className="text-[#78716C]" />
                     </button>
-                    <span className="text-sm font-medium text-gray-600 min-w-[140px] text-center">
-                        {format(startDate, "MMM d")} - {format(addDays(startDate, 6), "MMM d, yyyy")}
+                    <span className="text-[13px] font-medium text-[#1C1917] w-[148px] text-center">
+                        {format(startDate, "MMM d")} – {format(addDays(startDate, 6), "MMM d, yyyy")}
                     </span>
                     <button
                         onClick={() => setSelectedDate((d) => addDays(d, 7))}
-                        className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
+                        aria-label="Next week"
                     >
-                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                        <HugeiconsIcon icon={ArrowRight01Icon} size={15} className="text-[#78716C]" />
                     </button>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-                <div className="p-8">
+            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+                <div className="p-6">
                     {isLoading ? (
-                        <div className="py-20 text-center">
-                            <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                            <p className="text-gray-400 font-medium">Loading calendar...</p>
+                        <div className="py-20 flex flex-col items-center gap-3">
+                            <HugeiconsIcon icon={Loading03Icon} size={22} className="animate-spin text-[#A8A29E]" />
+                            <p className="text-[13px] text-[#78716C]">Loading calendar…</p>
                         </div>
                     ) : error ? (
-                        <div className="py-20 text-center">
-                            <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-400 font-medium">Could not load calendar</p>
-                            <p className="text-gray-300 text-sm mt-1">Please make sure you have granted calendar permissions.</p>
+                        <div className="py-20 flex flex-col items-center gap-3">
+                            <HugeiconsIcon icon={Calendar01Icon} size={28} className="text-[#E7E5E4]" />
+                            <p className="text-[14px] font-medium text-[#1C1917]">Could not load calendar</p>
+                            <p className="text-[13px] text-[#78716C]">Make sure you've granted calendar permissions.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-7 gap-4">
+                        <div className="grid grid-cols-7 gap-2">
                             {weekDays.map((day) => {
                                 const dayEvents = getEventsForDay(day);
                                 const isToday = isSameDay(day, new Date());
@@ -82,40 +94,43 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={day.toISOString()}
-                                        className={`min-h-[200px] rounded-2xl border ${isToday ? "border-black bg-gray-50" : "border-gray-100"
-                                            } p-4`}
+                                        className={`min-h-[180px] rounded-[2px] border p-3 ${
+                                            isToday
+                                                ? "border-[#1C1917] bg-white"
+                                                : "border-[#E7E5E4] bg-white"
+                                        }`}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className={`text-sm font-medium ${isToday ? "text-black" : "text-gray-400"}`}>
+                                        <div className="mb-3">
+                                            <p className={`text-[11px] font-medium uppercase tracking-wider ${isToday ? "text-[#EA580C]" : "text-[#A8A29E]"}`}>
                                                 {format(day, "EEE")}
-                                            </span>
-                                            <span className={`text-lg font-bold ${isToday ? "text-black" : "text-gray-900"}`}>
+                                            </p>
+                                            <p className={`text-[20px] font-semibold leading-tight ${isToday ? "text-[#1C1917]" : "text-[#1C1917]"}`}>
                                                 {format(day, "d")}
-                                            </span>
+                                            </p>
                                         </div>
 
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {dayEvents.length === 0 ? (
-                                                <p className="text-xs text-gray-300 text-center py-4">No events</p>
+                                                <p className="text-[11px] text-[#E7E5E4] text-center py-3">—</p>
                                             ) : (
                                                 dayEvents.map((event) => (
                                                     <div
                                                         key={event.id}
-                                                        className="bg-white rounded-xl p-3 border border-gray-100 hover:border-gray-200 transition-colors"
+                                                        className="bg-[#FAFAF9] border border-[#E7E5E4] rounded-[2px] p-2"
                                                     >
-                                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                                        <p className="text-[12px] font-medium text-[#1C1917] truncate">
                                                             {event.summary}
                                                         </p>
                                                         <div className="flex items-center gap-1 mt-1">
-                                                            <Clock className="w-3 h-3 text-gray-400" />
-                                                            <span className="text-xs text-gray-400">
+                                                            <HugeiconsIcon icon={Clock01Icon} size={11} className="text-[#A8A29E] shrink-0" />
+                                                            <span className="text-[11px] text-[#78716C]">
                                                                 {format(new Date(event.start), "h:mm a")}
                                                             </span>
                                                         </div>
                                                         {event.location && (
-                                                            <div className="flex items-center gap-1 mt-1">
-                                                                <MapPin className="w-3 h-3 text-gray-400" />
-                                                                <span className="text-xs text-gray-400 truncate">
+                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                <HugeiconsIcon icon={Location01Icon} size={11} className="text-[#A8A29E] shrink-0" />
+                                                                <span className="text-[11px] text-[#78716C] truncate">
                                                                     {event.location}
                                                                 </span>
                                                             </div>

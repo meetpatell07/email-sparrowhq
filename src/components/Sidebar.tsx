@@ -2,33 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
-    LayoutDashboard,
-    Mail,
-    FileText,
-    CheckSquare,
-    Settings,
-    LifeBuoy,
-    ChevronRight,
-    Search,
-    Tag,
-    Calendar
-} from "lucide-react";
+    Home01Icon,
+    Mail01Icon,
+    Calendar01Icon,
+    Tag01Icon,
+    Invoice01Icon,
+    CheckmarkSquare01Icon,
+    Settings01Icon,
+    ArrowUpDownIcon,
+    UserCircleIcon,
+} from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 
-const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
-    { name: "Categorization", icon: Tag, href: "/dashboard/categories" },
-    { name: "Emails", icon: Mail, href: "/dashboard/emails" },
-    { name: "Invoices", icon: FileText, href: "/dashboard/invoices" },
-    { name: "Drafts", icon: CheckSquare, href: "/dashboard/drafts" },
-];
-
-const otherItems = [
-    { name: "Settings", icon: Settings, href: "/dashboard/settings" },
-    { name: "Support", icon: LifeBuoy, href: "/dashboard/support" },
+const mainNav = [
+    { name: "Dashboard", icon: Home01Icon, href: "/dashboard" },
+    { name: "Emails", icon: Mail01Icon, href: "/dashboard/emails" },
+    { name: "Calendar", icon: Calendar01Icon, href: "/dashboard/calendar" },
+    { name: "Categories", icon: Tag01Icon, href: "/dashboard/categories" },
+    { name: "Invoices", icon: Invoice01Icon, href: "/dashboard/invoices" },
+    { name: "Drafts", icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
 ];
 
 export function Sidebar() {
@@ -36,107 +31,84 @@ export function Sidebar() {
     const { data: session } = authClient.useSession();
     const user = session?.user;
 
-    return (
-        <aside className="w-72 h-screen flex flex-col bg-white border-r border-gray-100 font-sans">
-            {/* Logo/Brand */}
-            <div className="p-8 pb-4">
-                <div className="flex items-center gap-2 mb-8">
-                    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                        <Mail className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-bold text-lg tracking-tight">SparrowHQ</span>
-                </div>
+    const initial = (user?.name || "S").charAt(0).toUpperCase();
 
-                <div className="relative mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="w-full bg-gray-50 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-black transition-all outline-none"
-                    />
-                </div>
+    return (
+        <aside className="w-[240px] h-screen flex flex-col bg-white border-r border-[#E7E5E4] shrink-0">
+
+            {/* Brand */}
+            <div className="px-4 pt-4 pb-2">
+                <button className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-[#F5F5F4] transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-[#E7E5E4] flex items-center justify-center text-[13px] font-semibold text-[#1C1917] shrink-0">
+                        {initial}
+                    </div>
+                    <span className="flex-1 text-left text-[14px] font-semibold text-[#1C1917] truncate">
+                        SparrowHQ
+                    </span>
+                    <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="text-[#A8A29E] shrink-0" />
+                </button>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 px-4 overflow-y-auto">
-                <div className="mb-8">
-                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Main</p>
-                    <div className="space-y-1">
-                        {menuItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium",
-                                        isActive
-                                            ? "bg-gray-50 text-black shadow-sm"
-                                            : "text-gray-500 hover:bg-gray-50 hover:text-black"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <item.icon className={cn(
-                                            "w-5 h-5 transition-colors",
-                                            isActive ? "text-black" : "text-gray-400 group-hover:text-black"
-                                        )} />
-                                        <span>{item.name}</span>
-                                    </div>
-                                    {isActive && <ChevronRight className="w-4 h-4" />}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div>
-                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Others</p>
-                    <div className="space-y-1">
-                        {otherItems.map((item) => (
+            {/* Main nav */}
+            <nav className="flex-1 px-4 py-2 overflow-y-auto no-scrollbar">
+                <div className="space-y-0.5">
+                    {mainNav.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-black transition-all duration-200 text-sm font-medium group"
+                                className={cn(
+                                    "flex items-center gap-3 px-2 py-2 rounded-md text-[14px] transition-colors",
+                                    isActive
+                                        ? "bg-[#F5F5F4] text-[#1C1917] font-medium"
+                                        : "text-[#78716C] hover:bg-[#F5F5F4] hover:text-[#1C1917] font-normal"
+                                )}
                             >
-                                <item.icon className="w-5 h-5 text-gray-400 group-hover:text-black transition-colors" />
-                                <span>{item.name}</span>
+                                <HugeiconsIcon
+                                    icon={item.icon}
+                                    size={18}
+                                    className={cn(
+                                        "shrink-0",
+                                        isActive ? "text-[#1C1917]" : "text-[#A8A29E]"
+                                    )}
+                                />
+                                {item.name}
                             </Link>
-                        ))}
-                    </div>
+                        );
+                    })}
                 </div>
             </nav>
 
-            {/* User Profile Section */}
-            <div className="p-4 mt-auto border-t border-gray-50">
+            {/* Bottom: Settings + User */}
+            <div className="px-4 pb-4 space-y-0.5">
+                <Link
+                    href="/dashboard/settings"
+                    className={cn(
+                        "flex items-center gap-3 px-2 py-2 rounded-md text-[14px] transition-colors",
+                        pathname === "/dashboard/settings"
+                            ? "bg-[#F5F5F4] text-[#1C1917] font-medium"
+                            : "text-[#78716C] hover:bg-[#F5F5F4] hover:text-[#1C1917] font-normal"
+                    )}
+                >
+                    <HugeiconsIcon icon={Settings01Icon} size={18} className="text-[#A8A29E] shrink-0" />
+                    Settings
+                </Link>
+
                 <Link
                     href="/dashboard/profile"
-                    className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-all duration-200 group"
+                    className="flex items-center gap-3 px-2 py-2 rounded-md text-[14px] text-[#1C1917] font-medium hover:bg-[#F5F5F4] transition-colors"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-sm">
-                            {user?.image ? (
-                                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-black text-white text-xs font-bold">
-                                    {(user?.name || "U").charAt(0)}
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-gray-900 flex items-center gap-1 leading-none mb-1">
-                                {user?.name || "User Name"}
-                                <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white" fill="none" stroke="currentColor" strokeWidth="4">
-                                        <path d="M20 6L9 17l-5-5" />
-                                    </svg>
-                                </div>
-                            </span>
-                            <span className="text-[10px] text-gray-400 truncate w-32 font-medium">
-                                {user?.email || "user@example.com"}
-                            </span>
-                        </div>
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-[#E7E5E4] shrink-0">
+                        {user?.image ? (
+                            <img src={user.image} alt={user.name ?? ""} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <HugeiconsIcon icon={UserCircleIcon} size={18} className="text-[#78716C]" />
+                            </div>
+                        )}
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors" />
+                    <span className="truncate">{user?.name || "Profile"}</span>
                 </Link>
             </div>
         </aside>

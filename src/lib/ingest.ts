@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 import { account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { getGmailClient, createGmailDraft } from "@/lib/gmail";
+import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -129,6 +129,11 @@ export async function processIngestion(specificUserId?: string) {
                 // AI Process
                 const category = await classifyEmail(subject, snippet, body);
                 await db.update(emails).set({ category, isProcessed: true }).where(eq(emails.id, emailRecord.id));
+
+                // Apply Gmail label (non-blocking)
+                applyGmailLabel(acc.userId, msg.id, category).catch((err) =>
+                    console.error(`Label apply failed for ${msg.id}:`, err)
+                );
 
                 if (category === 'invoice') {
                     const invoiceData = await extractInvoiceData(subject, body);

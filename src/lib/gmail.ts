@@ -301,3 +301,100 @@ export async function createGmailDraft(
 
     return response.data.id;
 }
+
+// ─── Gmail Label Management ─────────────────────────────────────────────────
+
+const LABEL_PREFIX = "SparrowHQ";
+
+// Google's supported background/text color pairs for labels
+const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
+    urgent:       { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
+    client:       { backgroundColor: "#285bac", textColor: "#ffffff" },
+    invoice:      { backgroundColor: "#16a765", textColor: "#ffffff" },
+    personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" },
+    marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" },
+    notification: { backgroundColor: "#f2a60c", textColor: "#ffffff" },
+};
+
+// In-memory cache per user: { userId → { category → labelId } }
+const labelCache = new Map<string, Map<string, string>>();
+
+/**
+ * Ensures all SparrowHQ category labels exist in the user's Gmail account.
+ * Returns a map of category → Gmail label ID.
+ * Results are cached in memory for the lifetime of the server process.
+ */
+export async function ensureGmailLabels(userId: string): Promise<Map<string, string>> {
+    if (labelCache.has(userId)) return labelCache.get(userId)!;
+
+    const gmail = await getGmailClient(userId);
+    const categories = Object.keys(LABEL_COLORS);
+
+    // Fetch existing labels
+    const listRes = await gmail.users.labels.list({ userId: "me" });
+    const existing = listRes.data.labels ?? [];
+
+    const map = new Map<string, string>();
+
+    for (const category of categories) {
+        const labelName = `${LABEL_PREFIX}/${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        const found = existing.find((l) => l.name === labelName);
+
+        if (found?.id) {
+            map.set(category, found.id);
+        } else {
+            // Create the label
+            try {
+                const created = await gmail.users.labels.create({
+                    userId: "me",
+                    requestBody: {
+                        name: labelName,
+                        labelListVisibility: "labelShow",
+                        messageListVisibility: "show",
+                        color: LABEL_COLORS[category],
+                    },
+                });
+                if (created.data.id) map.set(category, created.data.id);
+            } catch (err) {
+                console.error(`Failed to create Gmail label "${labelName}":`, err);
+            }
+        }
+    }
+
+    labelCache.set(userId, map);
+    return map;
+}
+
+/**
+ * Applies the SparrowHQ category label to a Gmail message.
+ * Removes any other SparrowHQ/* labels first so only one category label is active.
+ */
+export async function applyGmailLabel(
+    userId: string,
+    messageId: string,
+    category: string
+): Promise<void> {
+    try {
+        const labelMap = await ensureGmailLabels(userId);
+        const targetLabelId = labelMap.get(category);
+        if (!targetLabelId) return;
+
+        // Remove all other SparrowHQ labels, add the correct one
+        const otherLabelIds = [...labelMap.entries()]
+            .filter(([cat]) => cat !== category)
+            .map(([, id]) => id);
+
+        const gmail = await getGmailClient(userId);
+        await gmail.users.messages.modify({
+            userId: "me",
+            id: messageId,
+            requestBody: {
+                addLabelIds: [targetLabelId],
+                removeLabelIds: otherLabelIds,
+            },
+        });
+    } catch (err) {
+        console.error(`Failed to apply Gmail label for message ${messageId}:`, err);
+        // Non-fatal — don't block ingestion
+    }
+}

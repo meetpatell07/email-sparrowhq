@@ -3,116 +3,99 @@
 import { useRouter } from "next/navigation";
 import { format, isToday } from "date-fns";
 import { GmailEmail } from "@/lib/gmail";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { AlertCircleIcon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { useEffect, useState } from "react";
 import { classifyIndividualEmail } from "@/app/actions";
 
 interface EmailRowProps {
-  email: GmailEmail;
+    email: GmailEmail;
 }
 
-const categoryColors: Record<string, { bg: string; text: string }> = {
-  personal: { bg: "bg-blue-100", text: "text-blue-700" },
-  invoice: { bg: "bg-green-100", text: "text-green-700" },
-  client: { bg: "bg-purple-100", text: "text-purple-700" },
-  urgent: { bg: "bg-red-100", text: "text-red-700" },
-  marketing: { bg: "bg-pink-100", text: "text-pink-700" },
-  notification: { bg: "bg-yellow-100", text: "text-yellow-700" },
+const categoryStyles: Record<string, { bg: string; text: string }> = {
+    personal:     { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]" },
+    invoice:      { bg: "bg-[#ECFDF5]", text: "text-[#059669]" },
+    client:       { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]" },
+    urgent:       { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]" },
+    marketing:    { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]" },
+    notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]" },
 };
 
-export function EmailRow({ email }: EmailRowProps) {
-  const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(!email.category && !email.isProcessed);
-  const [currentCategory, setCurrentCategory] = useState(email.category);
-
-  useEffect(() => {
-    async function autoClassify() {
-      if (!email.category && !email.isProcessed) {
-        try {
-          const result = await classifyIndividualEmail(
-            email.gmailId,
-            email.subject || "",
-            email.snippet || "",
-            email.receivedAt
-          );
-          if (result.success) {
-            setCurrentCategory(result.category);
-          }
-        } catch (error) {
-          console.error("Failed to auto-classify email:", error);
-        } finally {
-          setIsProcessing(false);
-        }
-      }
-    }
-    autoClassify();
-  }, [email]);
-
-  const handleClick = () => {
-    router.push(`/dashboard/email/${email.gmailId}`);
-  };
-
-  const parseSenderName = (sender: string) => {
+function parseSenderName(sender: string): string {
     if (!sender) return "Unknown";
-
     const match = sender.match(/^(.+?)\s*<(.+?)>$|^(.+)$/);
     if (match) {
-      let name: string;
-      if (match[3]) {
-        name = match[3];
-      } else {
-        name = match[1].trim();
-      }
-      return name.replace(/^"(.+)"$/, "$1");
+        const name = match[3] ?? match[1].trim();
+        return name.replace(/^"(.+)"$/, "$1");
     }
     return sender;
-  };
+}
 
-  const name = parseSenderName(email.sender || "");
-  const category = currentCategory || "personal";
-  const isUrgent = category === "urgent";
-  const colors = categoryColors[category] || categoryColors.personal;
+export function EmailRow({ email }: EmailRowProps) {
+    const router = useRouter();
+    const [isProcessing, setIsProcessing] = useState(!email.category && !email.isProcessed);
+    const [currentCategory, setCurrentCategory] = useState(email.category);
 
-  return (
-    <div
-      onClick={handleClick}
-      className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-all duration-200 group border border-transparent hover:border-gray-100"
-    >
-      {/* Sender & Subject */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{name || "-"}</p>
-        <p className="text-sm text-gray-500 truncate">
-          {email.subject || "(No Subject)"}
-        </p>
-      </div>
+    useEffect(() => {
+        if (!email.category && !email.isProcessed) {
+            classifyIndividualEmail(
+                email.gmailId,
+                email.subject || "",
+                email.snippet || "",
+                email.receivedAt
+            )
+                .then((result) => {
+                    if (result.success) setCurrentCategory(result.category);
+                })
+                .catch(console.error)
+                .finally(() => setIsProcessing(false));
+        }
+    }, [email]);
 
-      {/* Category Badge */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {isProcessing ? (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-500 flex items-center gap-1.5 shadow-sm">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Classifying...
-          </span>
-        ) : (
-          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${colors.bg} ${colors.text} shadow-sm`}>
-            {category}
-          </span>
-        )}
-      </div>
+    const category = currentCategory || "personal";
+    const isUrgent = category === "urgent";
+    const styles = categoryStyles[category] ?? categoryStyles.personal;
+    const name = parseSenderName(email.sender || "");
+    const dateLabel = isToday(email.receivedAt)
+        ? format(email.receivedAt, "h:mm a")
+        : format(email.receivedAt, "d MMM");
 
-      {/* Urgency Indicator */}
-      <div className="w-6 flex-shrink-0 flex justify-center">
-        {isUrgent && !isProcessing && (
-          <AlertCircle className="w-4 h-4 text-red-500" />
-        )}
-      </div>
+    return (
+        <div
+            onClick={() => router.push(`/dashboard/email/${email.gmailId}`)}
+            className="flex items-center gap-4 px-4 py-3 border-b border-[#E7E5E4] last:border-b-0 hover:bg-[#FAFAF9] cursor-pointer transition-colors group"
+        >
+            {/* Urgent dot */}
+            <div className="w-4 shrink-0 flex justify-center">
+                {isUrgent && !isProcessing && (
+                    <HugeiconsIcon icon={AlertCircleIcon} size={14} className="text-[#DC2626]" />
+                )}
+            </div>
 
-      {/* Date */}
-      <div className="text-gray-400 text-xs font-medium w-16 text-right flex-shrink-0">
-        {isToday(email.receivedAt)
-          ? format(email.receivedAt, "h:mm a")
-          : format(email.receivedAt, "d MMM")}
-      </div>
-    </div>
-  );
+            {/* Sender & Subject */}
+            <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-medium text-[#1C1917] truncate leading-snug">{name || "—"}</p>
+                <p className="text-[13px] text-[#78716C] truncate leading-snug mt-0.5">
+                    {email.subject || "(No Subject)"}
+                </p>
+            </div>
+
+            {/* Category badge */}
+            <div className="shrink-0">
+                {isProcessing ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-[2px] bg-[#F5F5F4] text-[#78716C]">
+                        <HugeiconsIcon icon={Loading03Icon} size={11} className="animate-spin" />
+                        Classifying
+                    </span>
+                ) : (
+                    <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-[2px] capitalize ${styles.bg} ${styles.text}`}>
+                        {category}
+                    </span>
+                )}
+            </div>
+
+            {/* Date */}
+            <span className="text-[12px] text-[#A8A29E] w-14 text-right shrink-0">{dateLabel}</span>
+        </div>
+    );
 }
