@@ -1,12 +1,12 @@
+export const runtime = 'edge';
+
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { fetchCalendarEvents, getAvailability, createCalendarEvent, deleteCalendarEvent } from "@/lib/calendar";
 import { db } from "@/lib/db";
 import { emails, drafts } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { generateDraftReply } from "@/lib/ai";
-import { createGmailDraft } from "@/lib/gmail";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
 const MODEL = "gemini-3-flash-preview:cloud";
@@ -37,7 +37,6 @@ async function parseCommand(message: string): Promise<{
 }> {
     const lower = message.toLowerCase();
 
-    // Simple intent detection (can be enhanced with AI)
     if (lower.includes("calendar") && (lower.includes("today") || lower.includes("schedule") || lower.includes("what"))) {
         return { intent: "check_calendar", params: { date: "today" } };
     }
@@ -62,6 +61,7 @@ async function parseCommand(message: string): Promise<{
 
 async function handleCalendarCheck(ctx: CommandContext): Promise<string> {
     try {
+        const { fetchCalendarEvents } = await import("@/lib/calendar");
         const events = await fetchCalendarEvents(ctx.userId, new Date());
 
         if (events.length === 0) {
@@ -83,6 +83,7 @@ async function handleCalendarCheck(ctx: CommandContext): Promise<string> {
 
 async function handleAvailabilityCheck(ctx: CommandContext): Promise<string> {
     try {
+        const { getAvailability } = await import("@/lib/calendar");
         const availability = await getAvailability(ctx.userId, new Date());
 
         if (availability.free.length === 0) {
@@ -104,7 +105,6 @@ async function handleAvailabilityCheck(ctx: CommandContext): Promise<string> {
 
 async function handleDraftEmail(ctx: CommandContext): Promise<string> {
     try {
-        // Get the latest urgent/client email that needs a reply
         const recentEmails = await db.select()
             .from(emails)
             .where(eq(emails.userId, ctx.userId))
@@ -117,9 +117,9 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
             return "I don't see any emails to draft a reply for. Your inbox seems empty!";
         }
 
-        // Get availability for context
         let availabilityContext = "";
         try {
+            const { getAvailability } = await import("@/lib/calendar");
             const availability = await getAvailability(ctx.userId, new Date());
             if (availability.free.length > 0) {
                 const freeSlots = availability.free.slice(0, 2).map((slot) => {
@@ -137,7 +137,7 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
             emailToReply.sender || ""
         );
 
-        // Save to Gmail and DB
+        const { createGmailDraft } = await import("@/lib/gmail");
         const gmailDraftId = await createGmailDraft(
             ctx.userId,
             emailToReply.sender || "",
@@ -162,7 +162,6 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
 
 async function handleCreateEvent(ctx: CommandContext, rawMessage: string): Promise<string> {
     try {
-        // Use AI to parse event details
         const parsePrompt = `Extract event details from this message: "${rawMessage}"
 
 Return ONLY a JSON object with these fields:
@@ -187,24 +186,18 @@ If time not specified, default to 2pm. If duration not specified, use 60 minutes
                 throw new Error("No JSON found");
             }
         } catch {
-            // Default fallback
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(14, 0, 0, 0);
             const endTime = new Date(tomorrow);
             endTime.setHours(15, 0, 0, 0);
-
-            eventDetails = {
-                summary: "Meeting",
-                start: tomorrow,
-                end: endTime,
-            };
+            eventDetails = { summary: "Meeting", start: tomorrow, end: endTime };
         }
 
-        // Create the event
         const start = eventDetails.start ? new Date(eventDetails.start) : new Date();
         const end = eventDetails.end ? new Date(eventDetails.end) : new Date(start.getTime() + 60 * 60 * 1000);
 
+        const { createCalendarEvent } = await import("@/lib/calendar");
         const eventId = await createCalendarEvent(ctx.userId, {
             summary: eventDetails.summary || "Meeting",
             start,
@@ -283,8 +276,7 @@ export async function POST(request: Request) {
             case "list_emails":
                 response = await handleListEmails(ctx);
                 break;
-            default:
-                // Use AI to generate a helpful response
+            default: {
                 const helpPrompt = `The user asked: "${message}"
 
 You are an AI assistant for an email and calendar app. Respond helpfully. Available commands:
@@ -300,6 +292,7 @@ Respond conversationally in 1-2 sentences.`;
                 if (!response) {
                     response = "I can help you with:\n• Checking your calendar\n• Finding availability\n• Drafting email replies\n• Creating events\n\nTry asking something like \"What's on my calendar today?\" or \"Draft a reply to my latest email\".";
                 }
+            }
         }
 
         return NextResponse.json({ response });

@@ -58,7 +58,7 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" style={{ color: "var(--lp-text-primary)" }}>
             <SparrowMark size={28} />
-            <span className="font-heading font-bold text-[17px]" style={{ color: "var(--lp-text-primary)" }}>SparrowHQ</span>
+            <span className="font-heading font-bold text-[17px]" style={{ color: "var(--lp-text-primary)" }}>EmailHQ</span>
           </Link>
 
           {/* Desktop nav */}

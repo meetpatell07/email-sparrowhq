@@ -1,14 +1,12 @@
-import { auth } from "@/lib/auth";
+export const runtime = 'edge';
+
 import { headers } from "next/headers";
-import { fetchEmailsFromGmail } from "@/lib/gmail";
-import { processIngestion } from "@/lib/ingest";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const { auth } = await import("@/lib/auth");
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,12 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
-    // Run ingestion in background to process new emails (classification + auto-drafts)
-    // Don't await to avoid blocking the response
-    processIngestion(session.user.id).catch((err) => {
-      console.error("Background ingestion error:", err);
-    });
-
+    const { fetchEmailsFromGmail } = await import("@/lib/gmail");
     const emails = await fetchEmailsFromGmail(session.user.id, limit);
 
     return NextResponse.json({ emails });

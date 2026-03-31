@@ -1,6 +1,6 @@
+export const runtime = 'edge';
 
 import { NextResponse } from "next/server";
-import { processIngestion } from "@/lib/ingest";
 
 export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization');
@@ -8,6 +8,8 @@ export async function GET(req: Request) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Dynamic import defers evaluation to runtime where nodejs_compat is active
+    const { processIngestion } = await import("@/lib/ingest");
     const results = await processIngestion();
     return NextResponse.json({ success: true, processed: results.length });
 }

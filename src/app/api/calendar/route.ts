@@ -1,13 +1,12 @@
-import { auth } from "@/lib/auth";
+export const runtime = 'edge';
+
 import { headers } from "next/headers";
-import { fetchCalendarEvents, getAvailability } from "@/lib/calendar";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const { auth } = await import("@/lib/auth");
+        const session = await auth.api.getSession({ headers: await headers() });
 
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +17,8 @@ export async function GET(request: Request) {
         const endDate = searchParams.get("end");
         const availabilityDate = searchParams.get("availability");
 
-        // If checking availability for a specific date
+        const { fetchCalendarEvents, getAvailability } = await import("@/lib/calendar");
+
         if (availabilityDate) {
             const availability = await getAvailability(
                 session.user.id,
@@ -27,7 +27,6 @@ export async function GET(request: Request) {
             return NextResponse.json({ availability });
         }
 
-        // Otherwise fetch events
         const events = await fetchCalendarEvents(
             session.user.id,
             startDate ? new Date(startDate) : undefined,
