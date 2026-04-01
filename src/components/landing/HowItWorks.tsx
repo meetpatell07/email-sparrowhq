@@ -405,7 +405,7 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       ref={containerRef}
-      className="py-24 md:py-32 relative overflow-hidden"
+      className="py-24 md:py-32 relative"
       style={{ background: "var(--lp-bg-primary)" }}
     >
       {/* Subtle gradient backdrop */}
@@ -469,7 +469,7 @@ export function HowItWorks() {
                 ref={(el) => {
                   stepRefs.current[i] = el;
                 }}
-                className="relative flex gap-6 md:gap-8 pb-16 md:pb-24 last:pb-0 cursor-default"
+                className="relative flex gap-6 md:gap-8 pb-24 md:pb-40 last:pb-0 cursor-default"
               >
                 {/* Step dot */}
                 <div className="hidden md:flex flex-col items-center shrink-0">
