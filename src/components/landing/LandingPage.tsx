@@ -2,7 +2,6 @@
 
 import { Navbar }       from "./Navbar";
 import { Hero }         from "./Hero";
-import { LogoTicker }   from "./LogoTicker";
 import { StatsBar }     from "./StatsBar";
 import { HowItWorks }  from "./HowItWorks";
 import { Features }     from "./Features";
@@ -22,11 +21,9 @@ export function LandingPage() {
 
   return (
     <div style={{ background: "var(--lp-bg-primary)" }}>
-      <div className="scroll-progress-bar" />
       <Navbar />
       <Hero />
-      <LogoTicker />
-      <StatsBar />
+<StatsBar />
       <HowItWorks />
       <Features />
       <Testimonials />
