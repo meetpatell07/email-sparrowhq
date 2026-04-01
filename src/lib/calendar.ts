@@ -33,7 +33,7 @@ export async function getCalendarClient(userId: string) {
     let refreshToken = googleAccount.refreshToken;
     try {
         if (refreshToken.includes(":")) {
-            refreshToken = decrypt(refreshToken);
+            refreshToken = await decrypt(refreshToken);
         }
     } catch {
         // ignore, might be plain text

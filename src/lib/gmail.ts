@@ -30,10 +30,10 @@ export async function getGmailClient(userId: string) {
     // Since we haven't implemented the write-side encryption yet, this might fail if we try to decrypt plain text.
     // However, I will write it to support both or just decrypt assuming we solve the write side.
 
-    let refreshToken = googleAccount.refreshToken;
+    let refreshToken: string = googleAccount.refreshToken;
     try {
         if (refreshToken.includes(":")) {
-            refreshToken = decrypt(refreshToken);
+            refreshToken = await decrypt(refreshToken);
         }
     } catch {
         // ignore, might be plain text

@@ -23,7 +23,7 @@ const customAdapter = (options: any) => {
         createAccount: async (data: any) => {
             if (data.refreshToken) {
                 try {
-                    data.refreshToken = encrypt(data.refreshToken);
+                    data.refreshToken = await encrypt(data.refreshToken);
                 } catch (e) {
                     console.error("Encryption failed", e);
                 }
@@ -33,7 +33,7 @@ const customAdapter = (options: any) => {
         updateAccount: async (data: any) => {
             if (data.refreshToken) {
                 try {
-                    data.refreshToken = encrypt(data.refreshToken);
+                    data.refreshToken = await encrypt(data.refreshToken);
                 } catch (e) {
                     console.error("Encryption failed", e);
                 }
