@@ -19,7 +19,7 @@ const invoiceSchema = z.object({
 });
 
 // ─── Core helper ───────────────────────────────────────────────────────────
-async function callGroq(prompt: string): Promise<string> {
+export async function callGroq(prompt: string): Promise<string> {
     const { text } = await generateText({
         model: groq(MODEL),
         prompt,
