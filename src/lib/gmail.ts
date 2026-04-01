@@ -308,11 +308,11 @@ const LABEL_PREFIX = "SparrowHQ";
 
 // Google's supported background/text color pairs for labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
-    urgent:       { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
-    client:       { backgroundColor: "#285bac", textColor: "#ffffff" },
-    invoice:      { backgroundColor: "#16a765", textColor: "#ffffff" },
-    personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" },
-    marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" },
+    urgent: { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
+    client: { backgroundColor: "#285bac", textColor: "#ffffff" },
+    invoice: { backgroundColor: "#16a765", textColor: "#ffffff" },
+    personal: { backgroundColor: "#8e63ce", textColor: "#ffffff" },
+    marketing: { backgroundColor: "#ac2b16", textColor: "#ffffff" },
     notification: { backgroundColor: "#f2a60c", textColor: "#ffffff" },
 };
 
@@ -337,7 +337,7 @@ export async function ensureGmailLabels(userId: string): Promise<Map<string, str
     const map = new Map<string, string>();
 
     for (const category of categories) {
-        const labelName = `${LABEL_PREFIX}/${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        const labelName = `${category.charAt(0).toUpperCase() + category.slice(1)}`;
         const found = existing.find((l) => l.name === labelName);
 
         if (found?.id) {

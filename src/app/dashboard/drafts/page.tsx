@@ -66,18 +66,9 @@ export default function DraftsPage() {
 
     return (
         <DashboardLayout>
-            <header className="h-16 flex items-center justify-between px-6 border-b border-[#E7E5E4] bg-white shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
-                    <span className="text-[#E7E5E4]">/</span>
-                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">AI Drafts</span>
-                </div>
-                {!isLoading && !error && (
-                    <span className="text-[12px] text-[#A8A29E]">{drafts.length} drafts</span>
-                )}
-            </header>
+            
 
-            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+            <div className="min-h-full pb-20">
                 <div className="p-6 max-w-5xl mx-auto">
 
                     <div className="mb-4">

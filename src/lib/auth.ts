@@ -21,19 +21,34 @@ const customAdapter = (options: any) => {
     return {
         ...adapter,
         createAccount: async (data: any) => {
+            console.log("\n--- createAccount CALLED ---");
+            console.log("Original account data:", { ...data, refreshToken: data.refreshToken ? "[REDACTED]" : undefined, accessToken: data.accessToken ? "[REDACTED]" : undefined });
+
             if (data.refreshToken) {
                 try {
                     data.refreshToken = await encrypt(data.refreshToken);
+                    console.log("Refresh token successfully encrypted");
                 } catch (e) {
                     console.error("Encryption failed", e);
                 }
+            } else {
+                console.log("WARNING: No refreshToken supplied by Google provider to createAccount");
             }
+
+            if (!data.accessToken) {
+                console.log("WARNING: No accessToken supplied by Google provider to createAccount");
+            }
+
             return adapter.createAccount(data);
         },
         updateAccount: async (data: any) => {
+            console.log("\n--- updateAccount CALLED ---");
+            console.log("Updating account data:", { ...data, refreshToken: data.refreshToken ? "[REDACTED]" : undefined, accessToken: data.accessToken ? "[REDACTED]" : undefined });
+
             if (data.refreshToken) {
                 try {
                     data.refreshToken = await encrypt(data.refreshToken);
+                    console.log("Refresh token successfully encrypted on update");
                 } catch (e) {
                     console.error("Encryption failed", e);
                 }
@@ -45,6 +60,12 @@ const customAdapter = (options: any) => {
 
 export const auth = betterAuth({
     database: customAdapter,
+    account: {
+        accountLinking: {
+            enabled: true,
+            trustedProviders: ["google"],
+        },
+    },
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -57,6 +78,8 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/gmail.modify",
                 "https://www.googleapis.com/auth/calendar.readonly",
                 "https://www.googleapis.com/auth/calendar.events",
+                "https://www.googleapis.com/auth/drive.readonly",
+                "https://www.googleapis.com/auth/drive.file",
             ],
             accessType: "offline",
             prompt: "consent", // Force consent

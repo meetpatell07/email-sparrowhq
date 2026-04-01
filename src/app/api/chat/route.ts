@@ -6,23 +6,7 @@ import { emails, drafts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { generateDraftReply } from "@/lib/ai";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
-const MODEL = "gemini-3-flash-preview:cloud";
-
-async function callOllama(prompt: string): Promise<string> {
-    const response = await fetch(OLLAMA_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: MODEL, prompt, stream: false }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`Ollama error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.response || "";
-}
+import { callGemini } from "@/lib/ai";
 
 interface CommandContext {
     userId: string;
@@ -173,7 +157,7 @@ Return ONLY a JSON object with these fields:
 
 If time not specified, default to 2pm. If duration not specified, use 60 minutes.`;
 
-        const aiResponse = await callOllama(parsePrompt);
+        const aiResponse = await callGemini(parsePrompt);
 
         let eventDetails;
         try {
@@ -286,7 +270,7 @@ You are an AI assistant for an email and calendar app. Respond helpfully. Availa
 
 Respond conversationally in 1-2 sentences.`;
 
-                response = await callOllama(helpPrompt);
+                response = await callGemini(helpPrompt);
                 if (!response) {
                     response = "I can help you with:\n• Checking your calendar\n• Finding availability\n• Drafting email replies\n• Creating events\n\nTry asking something like \"What's on my calendar today?\" or \"Draft a reply to my latest email\".";
                 }

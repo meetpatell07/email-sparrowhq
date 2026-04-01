@@ -1,11 +1,5 @@
 import { z } from "zod";
-import { createGroq } from "@ai-sdk/groq";
-import { generateText } from "ai";
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = "llama-3.1-8b-instant";
-
-// ─── Schemas ───────────────────────────────────────────────────────────────
 const classificationSchema = z.object({
     category: z.enum(["personal", "invoice", "client", "urgent", "marketing", "notification"]),
 });
@@ -18,14 +12,30 @@ const invoiceSchema = z.object({
     dueDate: z.string().nullable().optional(),
 });
 
-// ─── Core helper ───────────────────────────────────────────────────────────
-export async function callGroq(prompt: string): Promise<string> {
-    const { text } = await generateText({
-        model: groq(MODEL),
-        prompt,
-        maxOutputTokens: 512,
+export async function callGemini(prompt: string): Promise<string> {
+    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY environment variable is not set");
+    }
+
+    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 512 }
+        })
     });
-    return text;
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 function parseJSONObject(text: string): unknown {
@@ -54,7 +64,7 @@ Return ONLY a JSON object: { "category": "one_of_the_above" }
 Email Content:
 ${content}`;
 
-    const text = await callGroq(prompt);
+    const text = await callGemini(prompt);
     const parsed = parseJSONObject(text);
     const validated = classificationSchema.parse(parsed);
     return validated.category;
@@ -76,7 +86,7 @@ Return ONLY a JSON object:
 Email Content:
 ${content}`;
 
-    const text = await callGroq(prompt);
+    const text = await callGemini(prompt);
     const parsed = parseJSONObject(text);
     return invoiceSchema.parse(parsed);
 }
@@ -89,5 +99,20 @@ export async function generateDraftReply(subject: string, body: string, sender: 
 Email Content:
 ${content}`;
 
-    return callGroq(prompt);
+    return callGemini(prompt);
+}
+
+export async function generateDraftFromFile(fileContext: string, instructions: string, recipient: string) {
+    const prompt = `You are an AI generating an email draft for the user. 
+The user wants to send an email to: ${recipient}.
+User Instructions: ${instructions}
+
+Here is the textual content of the associated Google Drive document they are referencing:
+---
+${fileContext.slice(0, 3000)}
+---
+
+Draft a professional email based on the instructions, summarizing or referencing the document appropriately. Keep it concise. Do not include a subject line or headers in the output, just the body of the email.`;
+
+    return callGemini(prompt);
 }

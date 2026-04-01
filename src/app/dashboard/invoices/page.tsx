@@ -7,15 +7,9 @@ import { Invoice01Icon } from "@hugeicons/core-free-icons";
 export default function InvoicesPage() {
     return (
         <DashboardLayout>
-            <header className="h-16 flex items-center px-6 border-b border-[#E7E5E4] bg-white shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
-                    <span className="text-[#E7E5E4]">/</span>
-                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">Invoices</span>
-                </div>
-            </header>
+            
 
-            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+            <div className="min-h-full pb-20">
                 <div className="p-6 max-w-5xl mx-auto">
                     <div className="mb-4">
                         <h1 className="text-[22px] font-semibold text-[#1C1917]">Invoices</h1>

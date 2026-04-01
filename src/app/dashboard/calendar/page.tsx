@@ -45,34 +45,9 @@ export default function CalendarPage() {
 
     return (
         <DashboardLayout>
-            <header className="h-16 flex items-center justify-between px-6 border-b border-[#E7E5E4] bg-white shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-[#78716C] uppercase tracking-wider">SparrowHQ</span>
-                    <span className="text-[#E7E5E4]">/</span>
-                    <span className="text-[11px] font-medium text-[#1C1917] uppercase tracking-wider">Calendar</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={() => setSelectedDate((d) => addDays(d, -7))}
-                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
-                        aria-label="Previous week"
-                    >
-                        <HugeiconsIcon icon={ArrowLeft01Icon} size={15} className="text-[#78716C]" />
-                    </button>
-                    <span className="text-[13px] font-medium text-[#1C1917] w-[148px] text-center">
-                        {format(startDate, "MMM d")} – {format(addDays(startDate, 6), "MMM d, yyyy")}
-                    </span>
-                    <button
-                        onClick={() => setSelectedDate((d) => addDays(d, 7))}
-                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
-                        aria-label="Next week"
-                    >
-                        <HugeiconsIcon icon={ArrowRight01Icon} size={15} className="text-[#78716C]" />
-                    </button>
-                </div>
-            </header>
+            
 
-            <div className="flex-1 overflow-y-auto bg-[#FAFAF9] no-scrollbar">
+            <div className="min-h-full pb-20">
                 <div className="p-6">
                     {isLoading ? (
                         <div className="py-20 flex flex-col items-center gap-3">

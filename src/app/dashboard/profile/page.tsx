@@ -12,10 +12,8 @@ export default function ProfilePage() {
         <div className="flex h-screen bg-white font-sans overflow-hidden">
             <Sidebar />
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-16 flex items-center justify-between px-8 border-b border-gray-100 flex-shrink-0">
-                    <h1 className="text-xl font-semibold text-black">Profile</h1>
-                </header>
-                <div className="flex-1 overflow-y-auto no-scrollbar p-8">
+                
+                <div className="min-h-full pb-20">
                     <div className="max-w-xl mx-auto">
                         <div className="flex items-center gap-6 mb-8">
                             <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200 shadow-sm flex-shrink-0">
