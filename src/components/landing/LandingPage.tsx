@@ -4,6 +4,7 @@ import { Navbar }       from "./Navbar";
 import { Hero }         from "./Hero";
 import { LogoTicker }   from "./LogoTicker";
 import { StatsBar }     from "./StatsBar";
+import { HowItWorks }  from "./HowItWorks";
 import { Features }     from "./Features";
 import { Testimonials } from "./Testimonials";
 import { FAQ }          from "./FAQ";
@@ -26,6 +27,7 @@ export function LandingPage() {
       <Hero />
       <LogoTicker />
       <StatsBar />
+      <HowItWorks />
       <Features />
       <Testimonials />
       <FAQ />
