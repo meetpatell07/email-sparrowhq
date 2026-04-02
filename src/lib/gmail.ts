@@ -72,6 +72,29 @@ export async function getGmailClient(userId: string) {
 }
 
 /**
+ * Checks whether the user's Gmail watch is active and not expiring within 24 h.
+ * If missing or about to expire, calls setupGmailWatch automatically.
+ * Safe to call on every request — only does real work when needed.
+ */
+export async function ensureGmailWatch(userId: string): Promise<void> {
+    const rows = await db
+        .select({ gmailWatchExpiration: account.gmailWatchExpiration })
+        .from(account)
+        .where(and(eq(account.userId, userId), eq(account.providerId, "google")))
+        .limit(1);
+
+    if (!rows.length) return;
+
+    const expiration = rows[0].gmailWatchExpiration;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const needsRenewal = !expiration || expiration.getTime() - Date.now() < oneDayMs;
+
+    if (needsRenewal) {
+        await setupGmailWatch(userId);
+    }
+}
+
+/**
  * Subscribes a user's Gmail inbox to Pub/Sub push notifications.
  * Must be called after OAuth and renewed weekly (Gmail watch expires in 7 days).
  */
@@ -297,7 +320,10 @@ export async function createGmailDraft(
     threadId?: string,
     fromEmail?: string
 ): Promise<string> {
+    console.log(`[draft] createGmailDraft called — to="${to}" subject="${subject}" threadId="${threadId ?? "none"}" fromEmail="${fromEmail ?? "none"}"`);
+
     const gmail = await getGmailClient(userId);
+    console.log(`[draft] Gmail client obtained for userId=${userId}`);
 
     // Construct the email in RFC 2822 format.
     // From: header is required by RFC 2822 — Gmail API rejects drafts without it.
@@ -308,6 +334,8 @@ export async function createGmailDraft(
         `MIME-Version: 1.0`,
         `Content-Type: text/plain; charset="UTF-8"`,
     ];
+    console.log(`[draft] RFC 2822 headers: ${headerLines.join(" | ")}`);
+
     const email = [...headerLines, ``, body].join("\r\n");
 
     // Base64url encode the email
@@ -317,6 +345,7 @@ export async function createGmailDraft(
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
+    console.log(`[draft] Calling gmail.users.drafts.create ...`);
     const response = await gmail.users.drafts.create({
         userId: 'me',
         requestBody: {
@@ -327,8 +356,10 @@ export async function createGmailDraft(
         }
     });
 
+    console.log(`[draft] API response — id="${response.data.id}" status=${response.status}`);
+
     if (!response.data.id) {
-        throw new Error("Failed to create Gmail draft");
+        throw new Error("Failed to create Gmail draft — API returned no id");
     }
 
     return response.data.id;
@@ -336,19 +367,32 @@ export async function createGmailDraft(
 
 // ─── Gmail Label Management ─────────────────────────────────────────────────
 
+// All labels are nested under this parent to avoid conflicts with Gmail's
+// built-in labels (e.g. "Scheduled" is a Gmail system label for scheduled send).
 const LABEL_PREFIX = "SparrowHQ";
 
-// Google's supported background/text color pairs for labels
+// Every color MUST be in Gmail's allowed palette — any other hex is rejected.
+// Full palette: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
-    to_do:        { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
-    follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" },
-    scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" },
-    finance:      { backgroundColor: "#0d652d", textColor: "#ffffff" },
-    work:         { backgroundColor: "#1a73e8", textColor: "#ffffff" },
-    personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" },
-    notification: { backgroundColor: "#f2a60c", textColor: "#ffffff" },
-    marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" },
+    to_do:        { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
+    follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" }, // dark blue
+    scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" }, // green
+    finance:      { backgroundColor: "#0b804b", textColor: "#ffffff" }, // dark green  (was #0d652d — not in palette)
+    work:         { backgroundColor: "#3c78d8", textColor: "#ffffff" }, // blue        (was #1a73e8 — not in palette)
+    personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" }, // purple
+    notification: { backgroundColor: "#ffad47", textColor: "#000000" }, // orange      (was #f2a60c — not in palette)
+    marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" }, // dark red
 };
+
+// Convert a category key → the nested Gmail label name displayed to the user.
+// e.g.  to_do → "SparrowHQ/To Do"   follow_up → "SparrowHQ/Follow Up"
+function categoryToLabelName(category: string): string {
+    const display = category
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    return `${LABEL_PREFIX}/${display}`;
+}
 
 // In-memory cache per user: { userId → { category → labelId } }
 const labelCache = new Map<string, Map<string, string>>();
@@ -364,20 +408,19 @@ export async function ensureGmailLabels(userId: string): Promise<Map<string, str
     const gmail = await getGmailClient(userId);
     const categories = Object.keys(LABEL_COLORS);
 
-    // Fetch existing labels
+    // Fetch existing labels once
     const listRes = await gmail.users.labels.list({ userId: "me" });
     const existing = listRes.data.labels ?? [];
 
     const map = new Map<string, string>();
 
     for (const category of categories) {
-        const labelName = `${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        const labelName = categoryToLabelName(category); // e.g. "SparrowHQ/To Do"
         const found = existing.find((l) => l.name === labelName);
 
         if (found?.id) {
             map.set(category, found.id);
         } else {
-            // Create the label
             try {
                 const created = await gmail.users.labels.create({
                     userId: "me",
@@ -388,9 +431,12 @@ export async function ensureGmailLabels(userId: string): Promise<Map<string, str
                         color: LABEL_COLORS[category],
                     },
                 });
-                if (created.data.id) map.set(category, created.data.id);
-            } catch (err) {
-                console.error(`Failed to create Gmail label "${labelName}":`, err);
+                if (created.data.id) {
+                    map.set(category, created.data.id);
+                    console.log(`[labels] Created "${labelName}" (${created.data.id})`);
+                }
+            } catch (err: any) {
+                console.error(`[labels] Failed to create "${labelName}":`, err?.message ?? err);
             }
         }
     }

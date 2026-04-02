@@ -33,7 +33,7 @@ export default function LoginPage() {
                         className="font-heading font-bold text-[17px]"
                         style={{ color: "#f0efe9" }}
                     >
-                        SparrowHQ
+                        EmailHQ
                     </span>
                 </div>
 
@@ -48,13 +48,13 @@ export default function LoginPage() {
                         className="font-heading text-[2rem] leading-[1.2] font-medium"
                         style={{ color: "#f0efe9" }}
                     >
-                        &ldquo;I used to spend 45 minutes every morning triaging my inbox. Now I open SparrowHQ, review the AI&rsquo;s draft replies, and I&rsquo;m done in 10.&rdquo;
+                        &ldquo;I used to spend 45 minutes every morning triaging my inbox. Now I open EmailHQ, review the AI&rsquo;s draft replies, and I&rsquo;m done in 10.&rdquo;
                     </blockquote>
                     <p
                         className="mt-6 font-body text-[13px]"
                         style={{ color: "#4a4a4a" }}
                     >
-                        Sarah K. — Founder, Meridian Studio
+                        Meet P. — Founder, Feon
                     </p>
                 </div>
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
                         className="font-heading font-bold text-[16px]"
                         style={{ color: "#f0efe9" }}
                     >
-                        SparrowHQ
+                        EmailHQ
                     </span>
                 </div>
 
@@ -93,7 +93,7 @@ export default function LoginPage() {
                         className="font-body text-[14px] mb-10"
                         style={{ color: "#4a4a4a" }}
                     >
-                        Connect your Gmail to get started with SparrowHQ.
+                        Connect your Gmail to get started with EmailHQ.
                     </p>
 
                     <button

@@ -6,10 +6,19 @@ import { setupGmailWatch } from "@/lib/gmail";
 
 // Renew Gmail Pub/Sub watch for all Google-linked users.
 // Gmail watch expires every 7 days — run this as a weekly cron.
-// Authorization: Bearer <CRON_SECRET>
+//
+// Accepted callers:
+//   1. Vercel Cron  — sends "x-vercel-cron: 1" header automatically (no secret needed)
+//   2. Manual call  — Authorization: Bearer <CRON_SECRET>
 export async function GET(req: NextRequest) {
+    const vercelCron = req.headers.get("x-vercel-cron");
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+
+    const authorized =
+        vercelCron === "1" ||
+        authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!authorized) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

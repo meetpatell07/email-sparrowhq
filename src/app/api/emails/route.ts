@@ -19,10 +19,24 @@ export async function GET(request: Request) {
     // Serve from Redis if available
     const cached = await redis.get(cacheKey);
     if (cached) {
+      // Still check watch health in the background even on cache hit —
+      // the cache TTL is 60 s so this won't spam the Gmail API.
+      const { ensureGmailWatch } = await import("@/lib/gmail");
+      ensureGmailWatch(session.user.id).catch((err) =>
+        console.error("[watch] ensure failed:", err)
+      );
       return NextResponse.json({ emails: cached });
     }
 
-    const { fetchEmailsFromGmail } = await import("@/lib/gmail");
+    const { fetchEmailsFromGmail, ensureGmailWatch } = await import("@/lib/gmail");
+
+    // Ensure Gmail Pub/Sub watch is active — fire-and-forget so it never
+    // blocks the email response. On first login this registers the watch;
+    // on subsequent calls it's a cheap DB read that no-ops unless expiring.
+    ensureGmailWatch(session.user.id).catch((err) =>
+      console.error("[watch] ensure failed:", err)
+    );
+
     const emails = await fetchEmailsFromGmail(session.user.id, limit);
 
     // Cache for 60 seconds
