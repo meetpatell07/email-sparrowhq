@@ -12,13 +12,15 @@ interface EmailRowProps {
     email: GmailEmail;
 }
 
-const categoryStyles: Record<string, { bg: string; text: string }> = {
-    personal:     { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]" },
-    invoice:      { bg: "bg-[#ECFDF5]", text: "text-[#059669]" },
-    client:       { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]" },
-    urgent:       { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]" },
-    marketing:    { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]" },
-    notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]" },
+const categoryStyles: Record<string, { bg: string; text: string; label: string }> = {
+    to_do:        { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]",  label: "To Do" },
+    follow_up:    { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]",  label: "Follow Up" },
+    scheduled:    { bg: "bg-[#ECFDF5]", text: "text-[#059669]",  label: "Scheduled" },
+    finance:      { bg: "bg-[#F0FDF4]", text: "text-[#16A34A]",  label: "Finance" },
+    work:         { bg: "bg-[#EFF6FF]", text: "text-[#2563EB]",  label: "Work" },
+    personal:     { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]",  label: "Personal" },
+    notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]",  label: "Notification" },
+    marketing:    { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]",  label: "Marketing" },
 };
 
 function parseSenderName(sender: string): string {
@@ -33,11 +35,11 @@ function parseSenderName(sender: string): string {
 
 export function EmailRow({ email }: EmailRowProps) {
     const router = useRouter();
-    const [isProcessing, setIsProcessing] = useState(!email.category && !email.isProcessed);
-    const [currentCategory, setCurrentCategory] = useState(email.category);
+    const [isProcessing, setIsProcessing] = useState(!email.categories?.length && !email.isProcessed);
+    const [currentCategories, setCurrentCategories] = useState<string[]>(email.categories ?? []);
 
     useEffect(() => {
-        if (!email.category && !email.isProcessed) {
+        if (!email.categories?.length && !email.isProcessed) {
             classifyIndividualEmail(
                 email.gmailId,
                 email.subject || "",
@@ -45,16 +47,14 @@ export function EmailRow({ email }: EmailRowProps) {
                 email.receivedAt
             )
                 .then((result) => {
-                    if (result.success) setCurrentCategory(result.category);
+                    if (result.success) setCurrentCategories(result.categories);
                 })
                 .catch(console.error)
                 .finally(() => setIsProcessing(false));
         }
     }, [email]);
 
-    const category = currentCategory || "personal";
-    const isUrgent = category === "urgent";
-    const styles = categoryStyles[category] ?? categoryStyles.personal;
+    const isActionRequired = currentCategories.includes("to_do");
     const name = parseSenderName(email.sender || "");
     const dateLabel = isToday(email.receivedAt)
         ? format(email.receivedAt, "h:mm a")
@@ -65,9 +65,9 @@ export function EmailRow({ email }: EmailRowProps) {
             onClick={() => router.push(`/dashboard/email/${email.gmailId}`)}
             className="flex items-center gap-4 px-4 py-3 border-b border-[#E7E5E4] last:border-b-0 hover:bg-[#FAFAF9] cursor-pointer transition-colors group"
         >
-            {/* Urgent dot */}
+            {/* Action dot */}
             <div className="w-4 shrink-0 flex justify-center">
-                {isUrgent && !isProcessing && (
+                {isActionRequired && !isProcessing && (
                     <HugeiconsIcon icon={AlertCircleIcon} size={14} className="text-[#DC2626]" />
                 )}
             </div>
@@ -80,18 +80,26 @@ export function EmailRow({ email }: EmailRowProps) {
                 </p>
             </div>
 
-            {/* Category badge */}
-            <div className="shrink-0">
+            {/* Category badges (up to 2) */}
+            <div className="shrink-0 flex items-center gap-1">
                 {isProcessing ? (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-[2px] bg-[#F5F5F4] text-[#78716C]">
                         <HugeiconsIcon icon={Loading03Icon} size={11} className="animate-spin" />
                         Classifying
                     </span>
-                ) : (
-                    <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-[2px] capitalize ${styles.bg} ${styles.text}`}>
-                        {category}
-                    </span>
-                )}
+                ) : currentCategories.length > 0 ? (
+                    currentCategories.slice(0, 2).map((cat) => {
+                        const style = categoryStyles[cat] ?? { bg: "bg-[#F5F5F4]", text: "text-[#78716C]", label: cat };
+                        return (
+                            <span
+                                key={cat}
+                                className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-[2px] ${style.bg} ${style.text}`}
+                            >
+                                {style.label}
+                            </span>
+                        );
+                    })
+                ) : null}
             </div>
 
             {/* Date */}

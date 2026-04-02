@@ -3,13 +3,16 @@ import { qstashReceiver } from "@/lib/qstash";
 import { processSingleEmail } from "@/lib/ingest";
 
 export async function POST(req: Request) {
-    // Verify the request genuinely comes from QStash
     const signature = req.headers.get("upstash-signature") ?? "";
     const body = await req.text();
 
-    const isValid = await qstashReceiver.verify({ signature, body });
-    if (!isValid) {
-        return new NextResponse("Unauthorized", { status: 401 });
+    // In development QStash cannot reach localhost, so skip signature verification.
+    // In production every request must be signed by QStash.
+    if (process.env.NODE_ENV === 'production') {
+        const isValid = await qstashReceiver.verify({ signature, body });
+        if (!isValid) {
+            return new NextResponse("Unauthorized", { status: 401 });
+        }
     }
 
     let payload: { userId: string; messageId: string };

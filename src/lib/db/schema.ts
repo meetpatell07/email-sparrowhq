@@ -62,7 +62,7 @@ export const emails = pgTable("emails", {
     receivedAt: timestamp("receivedAt").notNull(),
     sender: text("sender"), // The From header
     recipient: text("recipient"), // To header
-    category: text("category"), // personal, invoice, client, urgent
+    categories: text("categories").array(), // e.g. ["to_do", "work"]
     isProcessed: boolean("isProcessed").default(false),
     createdAt: timestamp("createdAt").defaultNow(),
 });
@@ -74,6 +74,8 @@ export const attachments = pgTable("attachments", {
     contentType: text("contentType"),
     size: integer("size"),
     r2Key: text("r2Key").notNull(), // Path in R2
+    driveFileId: text("driveFileId"), // Set when saved to Google Drive
+    driveWebViewLink: text("driveWebViewLink"), // Direct link to Drive file
     createdAt: timestamp("createdAt").defaultNow(),
 });
 

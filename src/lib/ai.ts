@@ -1,7 +1,15 @@
 import { z } from "zod";
 
+const VALID_CATEGORIES = [
+    "to_do", "follow_up", "scheduled",
+    "finance", "work", "personal",
+    "notification", "marketing",
+] as const;
+
+type Category = typeof VALID_CATEGORIES[number];
+
 const classificationSchema = z.object({
-    category: z.enum(["personal", "invoice", "client", "urgent", "marketing", "notification"]),
+    categories: z.array(z.enum(VALID_CATEGORIES)).min(1).max(2),
 });
 
 const invoiceSchema = z.object({
@@ -52,17 +60,34 @@ function parseJSONObject(text: string): unknown {
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────
-export async function classifyEmail(subject: string, snippet: string, body?: string) {
+export async function classifyEmail(subject: string, snippet: string, body?: string): Promise<Category[]> {
     const content = `Subject: ${subject}\nSnippet: ${snippet}\nBody: ${body?.slice(0, 1000) || ""}`;
-    const prompt = `Classify the following email into exactly one of these categories:
-- personal: One-on-one personal messages or non-business correspondence.
-- invoice: Bills, receipts, or payment-related documents.
-- client: Emails from or related to professional clients or work projects.
-- urgent: Messages requiring immediate attention or expressing high priority.
-- marketing: Newsletters, promotions, or generic marketing content.
-- notification: Automated system updates, social media alerts, or login notifications.
+    const prompt = `Analyze the email and assign one or more categories based on its content.
 
-Return ONLY a JSON object: { "category": "one_of_the_above" }
+## Categories
+
+Action categories (what the user needs to do):
+- to_do: Email requires a reply or action from the user (includes drafting AI replies)
+- follow_up: User has likely already replied and is waiting for a response (includes drafting AI replies)
+- scheduled: Email is about meetings, calendar events, or scheduling
+
+Context categories (what the email is about):
+- finance: Invoices, receipts, billing, payments
+- work: Clients, colleagues, business-related communication
+- personal: Friends, family, non-work communication
+
+Passive categories (low priority):
+- notification: Automated system emails (OTP, password reset, alerts)
+- marketing: Newsletters, promotions, sales outreach
+
+## Instructions
+- Return a JSON object only (no explanations).
+- Always return an array of categories (minimum 1, maximum 2).
+- Choose ALL categories that apply (multi-label classification).
+- If unsure between "work" and "personal", prefer "work" if the tone is professional.
+- Only use the exact category keys listed above.
+
+Return ONLY: { "categories": ["category1"] } or { "categories": ["category1", "category2"] }
 
 Email Content:
 ${content}`;
@@ -70,7 +95,7 @@ ${content}`;
     const text = await callGroq(prompt);
     const parsed = parseJSONObject(text);
     const validated = classificationSchema.parse(parsed);
-    return validated.category;
+    return validated.categories;
 }
 
 export async function extractInvoiceData(subject: string, body: string) {

@@ -41,14 +41,14 @@ export async function classifyIndividualEmail(gmailId: string, subject: string, 
         emailId = existing[0].id;
     }
 
-    const category = await classifyEmail(subject, snippet);
-    await db.update(emails).set({ category, isProcessed: true }).where(eq(emails.id, emailId));
+    const categories = await classifyEmail(subject, snippet);
+    await db.update(emails).set({ categories, isProcessed: true }).where(eq(emails.id, emailId));
 
-    // Apply Gmail label in the background
-    applyGmailLabel(session.user.id, gmailId, category).catch(console.error);
+    // Apply Gmail labels in the background
+    applyGmailLabel(session.user.id, gmailId, categories).catch(console.error);
 
     revalidatePath("/dashboard");
-    return { success: true, category };
+    return { success: true, categories };
 }
 
 // ... existing imports

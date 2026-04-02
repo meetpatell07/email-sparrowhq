@@ -8,7 +8,7 @@ import {
     Mail01Icon,
     Calendar01Icon,
     Tag01Icon,
-    Invoice01Icon,
+    Archive01Icon,
     CheckmarkSquare01Icon,
     Settings01Icon,
     ArrowUpDownIcon,
@@ -23,7 +23,7 @@ const mainNav = [
     { name: "Overview", icon: Home01Icon, href: "/dashboard" },
     { name: "Emails", icon: Mail01Icon, href: "/dashboard/emails" },
     { name: "Categories", icon: Tag01Icon, href: "/dashboard/categories" },
-    { name: "Invoices", icon: Invoice01Icon, href: "/dashboard/invoices" },
+    { name: "Vault", icon: Archive01Icon, href: "/dashboard/vault" },
     { name: "Drafts", icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
     { name: "Drive", icon: GoogleDriveIcon, href: "/dashboard/drive" },
 ];

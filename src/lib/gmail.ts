@@ -109,7 +109,7 @@ export interface GmailEmail {
     receivedAt: Date;
     sender: string;
     recipient: string;
-    category?: string;
+    categories?: string[];
     isProcessed?: boolean;
 }
 
@@ -132,7 +132,7 @@ export async function fetchEmailsFromGmail(
         // Fetch existing categories from DB for these IDs
         const dbEmails = await db.select({
             gmailId: emails.gmailId,
-            category: emails.category,
+            categories: emails.categories,
             isProcessed: emails.isProcessed
         })
             .from(emails)
@@ -174,7 +174,7 @@ export async function fetchEmailsFromGmail(
                     receivedAt,
                     sender: from,
                     recipient: to,
-                    category: dbRecord?.category || undefined,
+                    categories: dbRecord?.categories ?? undefined,
                     isProcessed: dbRecord?.isProcessed || false,
                 });
             } catch (error) {
@@ -294,19 +294,21 @@ export async function createGmailDraft(
     to: string,
     subject: string,
     body: string,
-    threadId?: string
+    threadId?: string,
+    fromEmail?: string
 ): Promise<string> {
     const gmail = await getGmailClient(userId);
 
-    // Construct the email in RFC 2822 format
-    const email = [
+    // Construct the email in RFC 2822 format.
+    // From: header is required by RFC 2822 — Gmail API rejects drafts without it.
+    const headerLines = [
+        ...(fromEmail ? [`From: ${fromEmail}`] : []),
         `To: ${to}`,
         `Subject: ${subject}`,
-        `Content-Type: text/plain; charset="UTF-8"`,
         `MIME-Version: 1.0`,
-        ``,
-        body
-    ].join("\r\n");
+        `Content-Type: text/plain; charset="UTF-8"`,
+    ];
+    const email = [...headerLines, ``, body].join("\r\n");
 
     // Base64url encode the email
     const encodedMessage = Buffer.from(email)
@@ -338,12 +340,14 @@ const LABEL_PREFIX = "SparrowHQ";
 
 // Google's supported background/text color pairs for labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
-    urgent: { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
-    client: { backgroundColor: "#285bac", textColor: "#ffffff" },
-    invoice: { backgroundColor: "#16a765", textColor: "#ffffff" },
-    personal: { backgroundColor: "#8e63ce", textColor: "#ffffff" },
-    marketing: { backgroundColor: "#ac2b16", textColor: "#ffffff" },
+    to_do:        { backgroundColor: "#fb4c2f", textColor: "#ffffff" },
+    follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" },
+    scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" },
+    finance:      { backgroundColor: "#0d652d", textColor: "#ffffff" },
+    work:         { backgroundColor: "#1a73e8", textColor: "#ffffff" },
+    personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" },
     notification: { backgroundColor: "#f2a60c", textColor: "#ffffff" },
+    marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" },
 };
 
 // In-memory cache per user: { userId → { category → labelId } }
@@ -396,22 +400,25 @@ export async function ensureGmailLabels(userId: string): Promise<Map<string, str
 }
 
 /**
- * Applies the SparrowHQ category label to a Gmail message.
- * Removes any other SparrowHQ/* labels first so only one category label is active.
+ * Applies the EmailHQ category labels to a Gmail message.
+ * Accepts an array of categories; removes stale EmailHQ labels and applies all new ones.
  */
 export async function applyGmailLabel(
     userId: string,
     messageId: string,
-    category: string
+    categories: string[]
 ): Promise<void> {
     try {
         const labelMap = await ensureGmailLabels(userId);
-        const targetLabelId = labelMap.get(category);
-        if (!targetLabelId) return;
 
-        // Remove all other SparrowHQ labels, add the correct one
-        const otherLabelIds = [...labelMap.entries()]
-            .filter(([cat]) => cat !== category)
+        const addLabelIds = categories
+            .map((cat) => labelMap.get(cat))
+            .filter(Boolean) as string[];
+
+        if (addLabelIds.length === 0) return;
+
+        const removeLabelIds = [...labelMap.entries()]
+            .filter(([cat]) => !categories.includes(cat))
             .map(([, id]) => id);
 
         const gmail = await getGmailClient(userId);
@@ -419,8 +426,8 @@ export async function applyGmailLabel(
             userId: "me",
             id: messageId,
             requestBody: {
-                addLabelIds: [targetLabelId],
-                removeLabelIds: otherLabelIds,
+                addLabelIds,
+                removeLabelIds,
             },
         });
     } catch (err) {

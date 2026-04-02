@@ -1,10 +1,24 @@
 import { db } from "@/lib/db";
-import { account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
+import { user, account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+
+// Recursively flatten all leaf parts of a multipart Gmail message.
+// Handles arbitrary nesting (multipart/mixed > multipart/related > etc.)
+function flattenParts(parts: any[]): any[] {
+    const result: any[] = [];
+    for (const part of parts) {
+        if (part.parts?.length) {
+            result.push(...flattenParts(part.parts));
+        } else {
+            result.push(part);
+        }
+    }
+    return result;
+}
 
 // Returns new Gmail message IDs for a user that haven't been ingested yet.
 export async function listNewEmailIds(userId: string): Promise<string[]> {
@@ -36,7 +50,7 @@ export async function listNewEmailIds(userId: string): Promise<string[]> {
 export async function processSingleEmail(
     userId: string,
     messageId: string
-): Promise<{ id: string; category: string } | null> {
+): Promise<{ id: string; categories: string[] } | null> {
     const gmail = await getGmailClient(userId);
 
     const fullMsg = await gmail.users.messages.get({
@@ -56,12 +70,15 @@ export async function processSingleEmail(
     const receivedAt = dateStr ? new Date(dateStr) : new Date();
     const snippet = fullMsg.data.snippet || '';
 
-    // Decode body
+    // Decode body — must search recursively because Gmail nests text/plain
+    // inside multipart/alternative which itself lives inside multipart/mixed.
+    // A flat payload.parts.find('text/plain') always misses it.
     let body = snippet;
     if (payload.body?.data) {
         body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
     } else if (payload.parts) {
-        const textPart = payload.parts.find((p) => p.mimeType === 'text/plain');
+        const allBodyParts = flattenParts(payload.parts);
+        const textPart = allBodyParts.find((p) => p.mimeType === 'text/plain');
         if (textPart?.body?.data) {
             body = Buffer.from(textPart.body.data, 'base64').toString('utf-8');
         }
@@ -83,56 +100,66 @@ export async function processSingleEmail(
 
     if (!emailRecord) return null;
 
-    // Upload attachments to R2
-    if (payload.parts) {
-        for (const part of payload.parts) {
-            if (part.filename && part.body?.attachmentId) {
-                try {
-                    const attData = await gmail.users.messages.attachments.get({
-                        userId: 'me',
-                        messageId,
-                        id: part.body.attachmentId,
-                    });
+    // Upload attachments to R2 — walk ALL nested parts recursively
+    const allParts = payload.parts ? flattenParts(payload.parts) : [];
+    for (const part of allParts) {
+        // Skip non-attachment parts (no filename = body text/html)
+        if (!part.filename) continue;
 
-                    if (attData.data.data) {
-                        const buffer = Buffer.from(attData.data.data, 'base64');
-                        const r2Key = `${userId}/${messageId}/${part.filename}`;
+        try {
+            let buffer: Buffer | null = null;
 
-                        await s3.send(new PutObjectCommand({
-                            Bucket: R2_BUCKET_NAME,
-                            Key: r2Key,
-                            Body: buffer,
-                            ContentType: part.mimeType || 'application/octet-stream',
-                        }));
-
-                        await db.insert(attachments).values({
-                            emailId: emailRecord.id,
-                            filename: part.filename,
-                            contentType: part.mimeType,
-                            size: part.body.size,
-                            r2Key,
-                        });
-                    }
-                } catch (attErr) {
-                    console.error(`Attachment upload failed for ${messageId}:`, attErr);
+            if (part.body?.attachmentId) {
+                // Large attachment stored separately by Gmail (> 2 KB)
+                const attData = await gmail.users.messages.attachments.get({
+                    userId: 'me',
+                    messageId,
+                    id: part.body.attachmentId,
+                });
+                if (attData.data.data) {
+                    buffer = Buffer.from(attData.data.data, 'base64');
                 }
+            } else if (part.body?.data) {
+                // Small inline attachment (≤ 2 KB) — data is embedded directly
+                buffer = Buffer.from(part.body.data, 'base64');
             }
+
+            if (!buffer) continue;
+
+            const r2Key = `${userId}/${messageId}/${part.filename}`;
+
+            await s3.send(new PutObjectCommand({
+                Bucket: R2_BUCKET_NAME,
+                Key: r2Key,
+                Body: buffer,
+                ContentType: part.mimeType || 'application/octet-stream',
+            }));
+
+            await db.insert(attachments).values({
+                emailId: emailRecord.id,
+                filename: part.filename,
+                contentType: part.mimeType,
+                size: buffer.length,
+                r2Key,
+            });
+        } catch (attErr) {
+            console.error(`Attachment upload failed [${part.filename}] for ${messageId}:`, attErr);
         }
     }
 
     // Classify with AI
-    const category = await classifyEmail(subject, snippet, body);
+    const categories = await classifyEmail(subject, snippet, body);
     await db.update(emails)
-        .set({ category, isProcessed: true })
+        .set({ categories, isProcessed: true })
         .where(eq(emails.id, emailRecord.id));
 
-    // Apply Gmail label (fire-and-forget)
-    applyGmailLabel(userId, messageId, category).catch((err) =>
+    // Apply Gmail labels (fire-and-forget)
+    applyGmailLabel(userId, messageId, categories).catch((err) =>
         console.error(`Label apply failed for ${messageId}:`, err)
     );
 
     // Invoice extraction
-    if (category === 'invoice') {
+    if (categories.includes('finance')) {
         const invoiceData = await extractInvoiceData(subject, body);
         if (invoiceData.isInvoice) {
             await db.insert(invoices).values({
@@ -146,9 +173,16 @@ export async function processSingleEmail(
         }
     }
 
-    // Auto-draft for urgent/client emails
-    if (category === 'urgent' || category === 'client') {
+    // Auto-draft for emails requiring action (to_do / follow_up / scheduled)
+    if (categories.includes('to_do') || categories.includes('follow_up') || categories.includes('scheduled')) {
         try {
+            // Resolve sender email for the From: header (required by RFC 2822)
+            const [userRecord] = await db.select({ email: user.email })
+                .from(user)
+                .where(eq(user.id, userId))
+                .limit(1);
+            const userEmail = userRecord?.email;
+
             const draftContent = await generateDraftReply(subject, body, from);
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
 
@@ -157,7 +191,8 @@ export async function processSingleEmail(
                 from,
                 replySubject,
                 draftContent,
-                fullMsg.data.threadId || undefined
+                fullMsg.data.threadId || undefined,
+                userEmail
             );
 
             await db.insert(drafts).values({
@@ -171,7 +206,7 @@ export async function processSingleEmail(
         }
     }
 
-    return { id: messageId, category };
+    return { id: messageId, categories };
 }
 
 // Used in local/dev environments where QStash isn't available.
