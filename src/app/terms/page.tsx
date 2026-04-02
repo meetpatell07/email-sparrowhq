@@ -130,7 +130,7 @@ const sections = [
     content: [
       {
         heading: "",
-        body: "The Service integrates with Google APIs and Google Gemini. Your use of those services is subject to Google's Terms of Service and Privacy Policy. EmailHQ is not responsible for the availability or conduct of third-party services.",
+        body: "The Service integrates with Google APIs and Groq. Your use of those services is subject to their respective Terms of Service and Privacy Policies. EmailHQ is not responsible for the availability or conduct of third-party services.",
       },
     ],
   },

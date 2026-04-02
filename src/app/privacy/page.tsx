@@ -37,7 +37,7 @@ const sections = [
     content: [
       {
         heading: "AI Classification & Drafting",
-        body: "Email content is sent to Google Gemini (Gemini API) solely for the purpose of classifying emails and generating draft replies on your behalf. This processing happens in real time; we do not permanently store the raw content of your emails on our servers.",
+        body: "Email content is sent to the Groq API solely for the purpose of classifying emails and generating draft replies on your behalf. This processing happens in real time; we do not permanently store the raw content of your emails on our servers.",
       },
       {
         heading: "Gmail Label Sync",
@@ -78,8 +78,8 @@ const sections = [
         body: "EmailHQ's use of Google APIs (Gmail, Calendar, Drive) is subject to Google's Privacy Policy and Terms of Service. Our use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.",
       },
       {
-        heading: "Google Gemini",
-        body: "Email content is processed by the Google Gemini API to perform classification and draft generation. Google's data processing terms apply to this processing.",
+        heading: "Groq",
+        body: "Email content is processed by the Groq API to perform classification and draft generation. Groq's data processing terms apply to this processing.",
       },
       {
         heading: "Hosting & Infrastructure",

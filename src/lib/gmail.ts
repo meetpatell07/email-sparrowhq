@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import { db } from "@/lib/db";
 import { account, emails } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import { decrypt } from "./encryption";
 
 export async function getGmailClient(userId: string) {
@@ -69,6 +69,36 @@ export async function getGmailClient(userId: string) {
     });
 
     return google.gmail({ version: "v1", auth: oauth2Client });
+}
+
+/**
+ * Subscribes a user's Gmail inbox to Pub/Sub push notifications.
+ * Must be called after OAuth and renewed weekly (Gmail watch expires in 7 days).
+ */
+export async function setupGmailWatch(userId: string): Promise<{ historyId: string; expiration: string }> {
+    const gmail = await getGmailClient(userId);
+
+    const res = await gmail.users.watch({
+        userId: "me",
+        requestBody: {
+            topicName: `projects/${process.env.GCP_PROJECT_ID}/topics/${process.env.PUBSUB_TOPIC_NAME}`,
+            labelIds: ["INBOX"],
+            labelFilterBehavior: "INCLUDE",
+        },
+    });
+
+    const historyId = res.data.historyId ?? "";
+    const expiration = res.data.expiration ?? "";
+
+    // Persist so we know the starting cursor and when to renew
+    await db.update(account)
+        .set({
+            gmailHistoryId: String(historyId),
+            gmailWatchExpiration: expiration ? new Date(parseInt(expiration)) : null,
+        })
+        .where(and(eq(account.userId, userId), eq(account.providerId, "google")));
+
+    return { historyId: String(historyId), expiration: String(expiration) };
 }
 
 export interface GmailEmail {

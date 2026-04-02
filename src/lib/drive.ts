@@ -52,6 +52,19 @@ export async function fetchRecentDriveFiles(userId: string) {
     return response.data.files || [];
 }
 
+export async function fetchAllDriveFiles(userId: string) {
+    const drive = await getGoogleDriveClient(userId);
+
+    const response = await drive.files.list({
+        pageSize: 100,
+        fields: "nextPageToken, files(id, name, mimeType, webViewLink, createdTime, modifiedTime, size, quotaBytesUsed)",
+        orderBy: "modifiedTime desc",
+        q: "trashed=false",
+    });
+
+    return response.data.files || [];
+}
+
 export async function getDriveFileContext(userId: string, fileId: string): Promise<string> {
     const drive = await getGoogleDriveClient(userId);
     

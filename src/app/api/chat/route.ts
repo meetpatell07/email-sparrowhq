@@ -1,12 +1,11 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { chatRatelimit } from "@/lib/ratelimit";
 import { db } from "@/lib/db";
 import { emails, drafts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { generateDraftReply } from "@/lib/ai";
-
-import { callGemini } from "@/lib/ai";
+import { generateDraftReply, callGroq } from "@/lib/ai";
 
 interface CommandContext {
     userId: string;
@@ -157,7 +156,7 @@ Return ONLY a JSON object with these fields:
 
 If time not specified, default to 2pm. If duration not specified, use 60 minutes.`;
 
-        const aiResponse = await callGemini(parsePrompt);
+        const aiResponse = await callGroq(parsePrompt);
 
         let eventDetails;
         try {
@@ -227,6 +226,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Rate limit: 20 chat messages per minute per user
+        const { success } = await chatRatelimit.limit(session.user.id);
+        if (!success) {
+            return NextResponse.json({ error: "Too many requests — slow down a bit." }, { status: 429 });
+        }
+
         const { message } = await request.json();
 
         if (!message) {
@@ -270,7 +275,7 @@ You are an AI assistant for an email and calendar app. Respond helpfully. Availa
 
 Respond conversationally in 1-2 sentences.`;
 
-                response = await callGemini(helpPrompt);
+                response = await callGroq(helpPrompt);
                 if (!response) {
                     response = "I can help you with:\n• Checking your calendar\n• Finding availability\n• Drafting email replies\n• Creating events\n\nTry asking something like \"What's on my calendar today?\" or \"Draft a reply to my latest email\".";
                 }

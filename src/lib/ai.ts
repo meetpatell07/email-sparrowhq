@@ -12,30 +12,33 @@ const invoiceSchema = z.object({
     dueDate: z.string().nullable().optional(),
 });
 
-export async function callGemini(prompt: string): Promise<string> {
-    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    const apiKey = process.env.GEMINI_API_KEY;
+export async function callGroq(prompt: string): Promise<string> {
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
-        throw new Error("GEMINI_API_KEY environment variable is not set");
+        throw new Error("GROQ_API_KEY environment variable is not set");
     }
 
-    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 512 }
-        })
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 512,
+        }),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Gemini error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Groq error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return data.choices?.[0]?.message?.content || "";
 }
 
 function parseJSONObject(text: string): unknown {
@@ -64,7 +67,7 @@ Return ONLY a JSON object: { "category": "one_of_the_above" }
 Email Content:
 ${content}`;
 
-    const text = await callGemini(prompt);
+    const text = await callGroq(prompt);
     const parsed = parseJSONObject(text);
     const validated = classificationSchema.parse(parsed);
     return validated.category;
@@ -86,7 +89,7 @@ Return ONLY a JSON object:
 Email Content:
 ${content}`;
 
-    const text = await callGemini(prompt);
+    const text = await callGroq(prompt);
     const parsed = parseJSONObject(text);
     return invoiceSchema.parse(parsed);
 }
@@ -99,7 +102,7 @@ export async function generateDraftReply(subject: string, body: string, sender: 
 Email Content:
 ${content}`;
 
-    return callGemini(prompt);
+    return callGroq(prompt);
 }
 
 export async function generateDraftFromFile(fileContext: string, instructions: string, recipient: string) {
@@ -114,5 +117,5 @@ ${fileContext.slice(0, 3000)}
 
 Draft a professional email based on the instructions, summarizing or referencing the document appropriately. Keep it concise. Do not include a subject line or headers in the output, just the body of the email.`;
 
-    return callGemini(prompt);
+    return callGroq(prompt);
 }

@@ -13,6 +13,7 @@ import {
     Settings01Icon,
     ArrowUpDownIcon,
     UserCircleIcon,
+    GoogleDriveIcon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
@@ -24,6 +25,7 @@ const mainNav = [
     { name: "Categories", icon: Tag01Icon, href: "/dashboard/categories" },
     { name: "Invoices", icon: Invoice01Icon, href: "/dashboard/invoices" },
     { name: "Drafts", icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
+    { name: "Drive", icon: GoogleDriveIcon, href: "/dashboard/drive" },
 ];
 
 export function Sidebar() {

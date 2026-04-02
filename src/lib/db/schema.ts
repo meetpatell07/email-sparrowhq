@@ -37,6 +37,8 @@ export const account = pgTable("account", {
     password: text("password"),
     createdAt: timestamp("createdAt").notNull(),
     updatedAt: timestamp("updatedAt").notNull(),
+    gmailHistoryId: text("gmail_history_id"),
+    gmailWatchExpiration: timestamp("gmail_watch_expiration"),
 });
 
 export const verification = pgTable("verification", {
@@ -57,7 +59,6 @@ export const emails = pgTable("emails", {
     threadId: text("threadId"),
     subject: text("subject"),
     snippet: text("snippet"),
-    body: text("body"), // Storing full body might be heavy, instructions say "metadata (no full mailbox cloning)", but we need content for AI. Maybe just text content.
     receivedAt: timestamp("receivedAt").notNull(),
     sender: text("sender"), // The From header
     recipient: text("recipient"), // To header

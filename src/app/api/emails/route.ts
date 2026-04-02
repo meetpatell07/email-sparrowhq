@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 
 export async function GET(request: Request) {
   try {
@@ -13,8 +14,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
+    const cacheKey = `emails:${session.user.id}:${limit}`;
+
+    // Serve from Redis if available
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return NextResponse.json({ emails: cached });
+    }
+
     const { fetchEmailsFromGmail } = await import("@/lib/gmail");
     const emails = await fetchEmailsFromGmail(session.user.id, limit);
+
+    // Cache for 60 seconds
+    await redis.set(cacheKey, emails, { ex: 60 });
 
     return NextResponse.json({ emails });
   } catch (error) {
