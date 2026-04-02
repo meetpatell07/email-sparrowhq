@@ -367,31 +367,26 @@ export async function createGmailDraft(
 
 // ─── Gmail Label Management ─────────────────────────────────────────────────
 
-// All labels are nested under this parent to avoid conflicts with Gmail's
-// built-in labels (e.g. "Scheduled" is a Gmail system label for scheduled send).
-const LABEL_PREFIX = "SparrowHQ";
-
 // Every color MUST be in Gmail's allowed palette — any other hex is rejected.
 // Full palette: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
     to_do:        { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
     follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" }, // dark blue
     scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" }, // green
-    finance:      { backgroundColor: "#0b804b", textColor: "#ffffff" }, // dark green  (was #0d652d — not in palette)
-    work:         { backgroundColor: "#3c78d8", textColor: "#ffffff" }, // blue        (was #1a73e8 — not in palette)
+    finance:      { backgroundColor: "#0b804b", textColor: "#ffffff" }, // dark green
+    work:         { backgroundColor: "#3c78d8", textColor: "#ffffff" }, // blue
     personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" }, // purple
-    notification: { backgroundColor: "#ffad47", textColor: "#000000" }, // orange      (was #f2a60c — not in palette)
+    notification: { backgroundColor: "#ffad47", textColor: "#000000" }, // orange
     marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" }, // dark red
 };
 
-// Convert a category key → the nested Gmail label name displayed to the user.
-// e.g.  to_do → "SparrowHQ/To Do"   follow_up → "SparrowHQ/Follow Up"
+// Convert a category key to a human-readable Gmail label name.
+// e.g.  to_do → "To Do"   follow_up → "Follow Up"
 function categoryToLabelName(category: string): string {
-    const display = category
+    return category
         .split("_")
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(" ");
-    return `${LABEL_PREFIX}/${display}`;
 }
 
 // In-memory cache per user: { userId → { category → labelId } }
@@ -405,21 +400,24 @@ const labelCache = new Map<string, Map<string, string>>();
 export async function ensureGmailLabels(userId: string): Promise<Map<string, string>> {
     if (labelCache.has(userId)) return labelCache.get(userId)!;
 
+    console.log(`[labels] Building label map for userId=${userId}`);
     const gmail = await getGmailClient(userId);
     const categories = Object.keys(LABEL_COLORS);
 
     // Fetch existing labels once
     const listRes = await gmail.users.labels.list({ userId: "me" });
     const existing = listRes.data.labels ?? [];
+    console.log(`[labels] Existing Gmail labels: ${existing.map((l) => l.name).join(", ")}`);
 
     const map = new Map<string, string>();
 
     for (const category of categories) {
-        const labelName = categoryToLabelName(category); // e.g. "SparrowHQ/To Do"
+        const labelName = categoryToLabelName(category); // e.g. "To Do"
         const found = existing.find((l) => l.name === labelName);
 
         if (found?.id) {
             map.set(category, found.id);
+            console.log(`[labels] Found existing "${labelName}" → ${found.id}`);
         } else {
             try {
                 const created = await gmail.users.labels.create({
@@ -433,14 +431,15 @@ export async function ensureGmailLabels(userId: string): Promise<Map<string, str
                 });
                 if (created.data.id) {
                     map.set(category, created.data.id);
-                    console.log(`[labels] Created "${labelName}" (${created.data.id})`);
+                    console.log(`[labels] Created "${labelName}" → ${created.data.id}`);
                 }
             } catch (err: any) {
-                console.error(`[labels] Failed to create "${labelName}":`, err?.message ?? err);
+                console.error(`[labels] FAILED to create "${labelName}": ${err?.message ?? err}`);
             }
         }
     }
 
+    console.log(`[labels] Final map: ${[...map.entries()].map(([k, v]) => `${k}=${v}`).join(", ")}`);
     labelCache.set(userId, map);
     return map;
 }
@@ -455,13 +454,19 @@ export async function applyGmailLabel(
     categories: string[]
 ): Promise<void> {
     try {
+        console.log(`[labels] applyGmailLabel — msgId=${messageId} categories=[${categories.join(", ")}]`);
         const labelMap = await ensureGmailLabels(userId);
 
         const addLabelIds = categories
             .map((cat) => labelMap.get(cat))
             .filter(Boolean) as string[];
 
-        if (addLabelIds.length === 0) return;
+        console.log(`[labels] addLabelIds=${JSON.stringify(addLabelIds)}`);
+
+        if (addLabelIds.length === 0) {
+            console.warn(`[labels] No label IDs resolved — categories may not exist in Gmail yet`);
+            return;
+        }
 
         const removeLabelIds = [...labelMap.entries()]
             .filter(([cat]) => !categories.includes(cat))
@@ -471,13 +476,10 @@ export async function applyGmailLabel(
         await gmail.users.messages.modify({
             userId: "me",
             id: messageId,
-            requestBody: {
-                addLabelIds,
-                removeLabelIds,
-            },
+            requestBody: { addLabelIds, removeLabelIds },
         });
-    } catch (err) {
-        console.error(`Failed to apply Gmail label for message ${messageId}:`, err);
-        // Non-fatal — don't block ingestion
+        console.log(`[labels] ✓ Labels applied to message ${messageId}`);
+    } catch (err: any) {
+        console.error(`[labels] ✗ Failed to apply label for message ${messageId}: ${err?.message ?? err}`);
     }
 }
