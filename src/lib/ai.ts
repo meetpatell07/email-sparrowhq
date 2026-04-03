@@ -9,7 +9,16 @@ const VALID_CATEGORIES = [
 type Category = typeof VALID_CATEGORIES[number];
 
 const classificationSchema = z.object({
-    categories: z.array(z.enum(VALID_CATEGORIES)).min(1).transform(arr => arr.slice(0, 1)),
+    // Accept any strings from the model, strip unrecognised values (e.g. stale "work"/"to_do"),
+    // then enforce at least one valid result. Transform runs after the string[] parse, so unknown
+    // categories are silently dropped instead of throwing a ZodError.
+    categories: z.array(z.string())
+        .transform(arr =>
+            arr.filter((c): c is Category =>
+                (VALID_CATEGORIES as readonly string[]).includes(c)
+            ).slice(0, 1)
+        )
+        .pipe(z.array(z.enum(VALID_CATEGORIES)).min(1)),
 });
 
 const invoiceSchema = z.object({

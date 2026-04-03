@@ -51,9 +51,6 @@ export async function processSingleEmail(
     userId: string,
     messageId: string
 ): Promise<{ id: string; categories: string[] } | null> {
-    console.log(`\n[ingest] ── START processSingleEmail ──────────────────`);
-    console.log(`[ingest] userId=${userId}  messageId=${messageId}`);
-
     const gmail = await getGmailClient(userId);
 
     const fullMsg = await gmail.users.messages.get({
@@ -87,9 +84,6 @@ export async function processSingleEmail(
         }
     }
 
-    console.log(`[ingest] subject="${subject}"  from="${from}"`);
-    console.log(`[ingest] body length=${body.length} chars (snippet fallback=${body === snippet})`);
-
     // Store email — skip silently if already exists (duplicate delivery)
     // Body is intentionally not persisted; it is kept in memory only for AI processing.
     const [emailRecord] = await db.insert(emails).values({
@@ -105,10 +99,8 @@ export async function processSingleEmail(
     }).returning({ id: emails.id }).onConflictDoNothing();
 
     if (!emailRecord) {
-        console.log(`[ingest] Email already in DB — skipping (duplicate delivery)`);
         return null;
     }
-    console.log(`[ingest] Email inserted → dbId=${emailRecord.id}`);
 
     // Upload attachments to R2 — walk ALL nested parts recursively
     const allParts = payload.parts ? flattenParts(payload.parts) : [];
@@ -158,18 +150,14 @@ export async function processSingleEmail(
     }
 
     // Classify with AI
-    console.log(`[ingest] Classifying email …`);
     const categories = await classifyEmail(subject, snippet, body);
-    console.log(`[ingest] Categories assigned: [${categories.join(", ")}]`);
 
     await db.update(emails)
         .set({ categories, isProcessed: true })
         .where(eq(emails.id, emailRecord.id));
 
-    // Apply Gmail labels (fire-and-forget)
-    applyGmailLabel(userId, messageId, categories).catch((err) =>
-        console.error(`[ingest] Label apply failed for ${messageId}:`, err)
-    );
+    // Apply Gmail labels — must be awaited; fire-and-forget gets killed by serverless before it resolves
+    await applyGmailLabel(userId, messageId, categories);
 
     // Invoice extraction
     if (categories.includes('finance')) {
@@ -192,8 +180,6 @@ export async function processSingleEmail(
         categories.includes('follow_up') ||
         categories.includes('scheduled');
 
-    console.log(`[ingest] needsDraft=${needsDraft}  (important=${categories.includes('important')} follow_up=${categories.includes('follow_up')} scheduled=${categories.includes('scheduled')})`);
-
     if (needsDraft) {
         try {
             // Resolve sender email for the From: header (required by RFC 2822)
@@ -202,15 +188,11 @@ export async function processSingleEmail(
                 .where(eq(user.id, userId))
                 .limit(1);
             const userEmail = userRecord?.email ?? null;
-            console.log(`[ingest] User email for From header: ${userEmail}`);
 
-            console.log(`[ingest] Calling generateDraftReply …`);
             const draftContent = await generateDraftReply(subject, body, from);
-            console.log(`[ingest] Draft content (first 120 chars): "${draftContent.slice(0, 120)}"`);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
 
-            console.log(`[ingest] Calling createGmailDraft …`);
             const gmailDraftId = await createGmailDraft(
                 userId,
                 from,
@@ -237,7 +219,6 @@ export async function processSingleEmail(
         }
     }
 
-    console.log(`[ingest] ── END processSingleEmail ────────────────────\n`);
     return { id: messageId, categories };
 }
 
