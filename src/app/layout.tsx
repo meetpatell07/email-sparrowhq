@@ -21,6 +21,9 @@ const ebGaramond = EB_Garamond({
 export const metadata: Metadata = {
   title: "SparrowHQ — AI Email Assistant",
   description: "AI-powered email management. Auto-classify, auto-draft, and manage your inbox with natural language.",
+  icons: {
+    icon: "/sparrow-logo.svg",
+  },
 };
 
 export default function RootLayout({
