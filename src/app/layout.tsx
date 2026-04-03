@@ -3,6 +3,7 @@ import { Figtree, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/provider/theme-provider";
 import { LenisProvider } from "@/components/providers/LenisProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const figtree = Figtree({
   variable: "--font-body",
@@ -21,6 +22,9 @@ const ebGaramond = EB_Garamond({
 export const metadata: Metadata = {
   title: "SparrowHQ — AI Email Assistant",
   description: "AI-powered email management. Auto-classify, auto-draft, and manage your inbox with natural language.",
+  icons: {
+    icon: "/sparrow-logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -36,6 +40,7 @@ export default function RootLayout({
             {children}
           </LenisProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

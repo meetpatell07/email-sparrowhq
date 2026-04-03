@@ -4,6 +4,12 @@ import { account } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { decrypt } from "./encryption";
 
+export interface CalendarAttendee {
+    email: string;
+    displayName?: string;
+    self?: boolean;
+}
+
 export interface CalendarEvent {
     id: string;
     summary: string;
@@ -11,7 +17,9 @@ export interface CalendarEvent {
     start: Date;
     end: Date;
     location?: string;
-    attendees?: string[];
+    attendees?: CalendarAttendee[];
+    hangoutLink?: string;
+    isAllDay?: boolean;
 }
 
 export async function getCalendarClient(userId: string) {
@@ -90,7 +98,15 @@ export async function fetchCalendarEvents(
         start: new Date(event.start?.dateTime || event.start?.date || new Date()),
         end: new Date(event.end?.dateTime || event.end?.date || new Date()),
         location: event.location || undefined,
-        attendees: event.attendees?.map((a) => a.email || "").filter(Boolean) || [],
+        attendees: event.attendees
+            ?.filter((a) => a.email)
+            .map((a) => ({
+                email: a.email!,
+                displayName: a.displayName || undefined,
+                self: a.self || false,
+            })) ?? [],
+        hangoutLink: (event as any).hangoutLink || undefined,
+        isAllDay: !event.start?.dateTime,
     }));
 }
 

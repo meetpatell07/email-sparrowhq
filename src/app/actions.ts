@@ -53,6 +53,28 @@ export async function classifyIndividualEmail(gmailId: string, subject: string, 
 
 // ... existing imports
 
+export async function disconnectGmail(accountId: string) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) throw new Error("Unauthorized");
+
+    // Only clear tokens for the specific account row that belongs to this user
+    await db.update(account)
+        .set({
+            accessToken: null,
+            refreshToken: null,
+            accessTokenExpiresAt: null,
+            refreshTokenExpiresAt: null,
+            gmailHistoryId: null,
+            gmailWatchExpiration: null,
+        })
+        .where(and(eq(account.id, accountId), eq(account.userId, session.user.id)));
+
+    return { success: true };
+}
+
 export async function signOutAndClearTokens() {
     const session = await auth.api.getSession({
         headers: await headers()

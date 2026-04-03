@@ -14,18 +14,18 @@ import {
     Mail01Icon,
     Archive01Icon,
     CheckmarkSquare01Icon,
-    GoogleDriveIcon,
+    Settings01Icon,
 } from "@hugeicons/core-free-icons";
 import { SparrowMark } from "@/components/landing/Logo";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const mobileNav = [
-    { name: "Home",   icon: Home01Icon,             href: "/dashboard" },
-    { name: "Emails", icon: Mail01Icon,              href: "/dashboard/emails" },
-    { name: "Vault",  icon: Archive01Icon,           href: "/dashboard/vault" },
-    { name: "Drafts", icon: CheckmarkSquare01Icon,   href: "/dashboard/drafts" },
-    { name: "Drive",  icon: GoogleDriveIcon,         href: "/dashboard/drive" },
+    { name: "Home",     icon: Home01Icon,             href: "/dashboard" },
+    { name: "Emails",   icon: Mail01Icon,              href: "/dashboard/emails" },
+    { name: "Vault",    icon: Archive01Icon,           href: "/dashboard/vault" },
+    { name: "Drafts",   icon: CheckmarkSquare01Icon,   href: "/dashboard/drafts" },
+    { name: "Settings", icon: Settings01Icon,          href: "/dashboard/settings" },
 ];
 
 interface DashboardLayoutProps {
