@@ -137,8 +137,8 @@ export default function DraftsPage() {
                                             </p>
                                         </div>
 
-                                        {/* Footer */}
-                                        <div className="flex items-center justify-between">
+                                                        {/* Footer */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="text-[12px] text-[#A8A29E]">
                                                 {draft.createdAt && format(new Date(draft.createdAt), "MMM d, yyyy 'at' h:mm a")}
                                             </span>

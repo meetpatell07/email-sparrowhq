@@ -186,13 +186,13 @@ export async function processSingleEmail(
         }
     }
 
-    // Auto-draft for emails requiring action (to_do / follow_up / scheduled)
+    // Auto-draft for emails requiring action (important / follow_up / scheduled)
     const needsDraft =
-        categories.includes('to_do') ||
+        categories.includes('important') ||
         categories.includes('follow_up') ||
         categories.includes('scheduled');
 
-    console.log(`[ingest] needsDraft=${needsDraft}  (to_do=${categories.includes('to_do')} follow_up=${categories.includes('follow_up')} scheduled=${categories.includes('scheduled')})`);
+    console.log(`[ingest] needsDraft=${needsDraft}  (important=${categories.includes('important')} follow_up=${categories.includes('follow_up')} scheduled=${categories.includes('scheduled')})`);
 
     if (needsDraft) {
         try {

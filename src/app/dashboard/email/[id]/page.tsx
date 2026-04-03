@@ -4,10 +4,12 @@ export const runtime = 'edge';
 
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import Link from "next/link";
 import { ArrowLeft, Users, Reply } from "lucide-react";
 import { format } from "date-fns";
 import { GmailEmailDetail } from "@/lib/gmail";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Loading03Icon } from "@hugeicons/core-free-icons";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -23,49 +25,36 @@ export default function EmailDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 w-48 bg-muted rounded" />
-            <div className="bg-card rounded-xl border border-border p-6 space-y-4">
-              <div className="h-8 w-3/4 bg-muted rounded" />
-              <div className="h-4 w-1/2 bg-muted rounded" />
-              <div className="h-4 w-1/3 bg-muted rounded" />
-              <div className="h-32 w-full bg-muted rounded mt-6" />
-            </div>
+      <DashboardLayout>
+        <div className="p-6 max-w-3xl mx-auto">
+          <div className="py-20 flex flex-col items-center gap-3">
+            <HugeiconsIcon icon={Loading03Icon} size={22} className="animate-spin text-[#A8A29E]" />
+            <p className="text-[13px] text-[#78716C]">Loading email…</p>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !data?.email) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
+      <DashboardLayout>
+        <div className="p-4 md:p-6 max-w-3xl mx-auto">
           <button
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-[13px] text-[#78716C] hover:text-[#1C1917] transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
-          <div className="bg-card rounded-xl border border-border p-8 text-center">
-            <div className="text-destructive text-lg font-medium mb-2">
-              Unable to load email
-            </div>
-            <p className="text-muted-foreground">
+          <div className="bg-white border border-[#E7E5E4] rounded-lg p-8 text-center">
+            <p className="text-[14px] font-medium text-[#DC2626] mb-2">Unable to load email</p>
+            <p className="text-[13px] text-[#78716C]">
               {error?.message || "Email not found or has been deleted."}
             </p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 mt-4 text-primary hover:underline"
-            >
-              Return to inbox
-            </Link>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -78,12 +67,7 @@ export default function EmailDetailPage() {
     if (!sender) return "Unknown";
     const match = sender.match(/^(.+?)\s*<(.+?)>$|^(.+)$/);
     if (match) {
-      let name: string;
-      if (match[3]) {
-        name = match[3];
-      } else {
-        name = match[1].trim();
-      }
+      const name = match[3] ?? match[1].trim();
       return name.replace(/^"(.+)"$/, "$1");
     }
     return sender;
@@ -95,88 +79,93 @@ export default function EmailDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <button
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+    <DashboardLayout>
+      <div className="min-h-full pb-20 md:pb-6">
+        <div className="p-4 md:p-6 max-w-3xl mx-auto">
 
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          {/* Email Header */}
-          <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-semibold text-foreground mb-4">
-              {email.subject || "(No Subject)"}
-            </h1>
+          {/* Back button */}
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-[13px] text-[#78716C] hover:text-[#1C1917] transition-colors mb-5"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
 
-            <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ">
-                <span className="text-primary font-medium text-sm">
-                  {parseSenderName(email.sender).charAt(0).toUpperCase()}
+          <div className="bg-white border border-[#E7E5E4] rounded-lg overflow-hidden">
+            {/* Email header */}
+            <div className="p-4 md:p-6 border-b border-[#E7E5E4]">
+              <h1 className="text-[18px] md:text-[22px] font-semibold text-[#1C1917] mb-4 leading-snug">
+                {email.subject || "(No Subject)"}
+              </h1>
+
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full bg-[#F5F5F4] flex items-center justify-center shrink-0 border border-[#E7E5E4]">
+                  <span className="text-[14px] font-semibold text-[#78716C]">
+                    {parseSenderName(email.sender).charAt(0).toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Sender info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-[14px] font-semibold text-[#1C1917]">
+                      {parseSenderName(email.sender)}
+                    </span>
+                    <span className="text-[12px] text-[#A8A29E] truncate">
+                      &lt;{extractEmail(email.sender)}&gt;
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-[#78716C] mt-0.5">
+                    to {parseSenderName(email.recipient)}
+                  </p>
+                </div>
+
+                {/* Date — right-aligned, wraps below on tiny screens */}
+                <span className="text-[12px] text-[#A8A29E] shrink-0 mt-0.5">
+                  {format(email.receivedAt, "d MMM, h:mm a")}
                 </span>
               </div>
 
-              {/* Sender Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-foreground">
-                    {parseSenderName(email.sender)}
-                  </span>
-                  <span className="text-muted-foreground text-sm">
-                    &lt;{extractEmail(email.sender)}&gt;
-                  </span>
+              {/* CC / Reply-To */}
+              {(email.cc || email.replyTo) && (
+                <div className="mt-4 pt-4 border-t border-[#E7E5E4] space-y-2 text-[12px] text-[#78716C]">
+                  {email.cc && (
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 shrink-0" />
+                      <span className="font-medium">Cc:</span>
+                      <span className="truncate">{email.cc}</span>
+                    </div>
+                  )}
+                  {email.replyTo && (
+                    <div className="flex items-center gap-2">
+                      <Reply className="w-3.5 h-3.5 shrink-0" />
+                      <span className="font-medium">Reply-To:</span>
+                      <span className="truncate">{email.replyTo}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  to {parseSenderName(email.recipient)}
-                </div>
-              </div>
-
-              {/* Date */}
-              <div className="text-sm text-muted-foreground">
-                {format(email.receivedAt, "MMM d, yyyy 'at' h:mm a")}
-              </div>
+              )}
             </div>
 
-            {/* Additional recipients */}
-            {(email.cc || email.replyTo) && (
-              <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
-                {email.cc && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium">Cc:</span>
-                    <span>{email.cc}</span>
-                  </div>
-                )}
-                {email.replyTo && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Reply className="w-4 h-4" />
-                    <span className="font-medium">Reply-To:</span>
-                    <span>{email.replyTo}</span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Body */}
+            <div className="p-4 md:p-6">
+              {email.htmlBody ? (
+                <div
+                  className="prose prose-sm max-w-none bg-white rounded text-[#1C1917] overflow-x-auto"
+                  dangerouslySetInnerHTML={{ __html: email.htmlBody }}
+                />
+              ) : (
+                <p className="whitespace-pre-wrap text-[14px] text-[#1C1917] leading-relaxed">
+                  {email.body || email.snippet || "No content available."}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="p-6">
-            {email.htmlBody ? (
-              <div
-                className="prose prose-sm max-w-none dark:prose-invert bg-white dark:bg-gray-50 rounded p-4 text-gray-900"
-                dangerouslySetInnerHTML={{ __html: email.htmlBody }}
-              />
-            ) : (
-              <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-                {email.body || email.snippet || "No content available."}
-              </div>
-            )}
-          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

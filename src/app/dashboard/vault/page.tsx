@@ -170,12 +170,21 @@ function AttachmentPanel({
     }
 
     return (
+        <>
+            {/* Mobile backdrop */}
+            <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={onClose} />
         <motion.div
             initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-            className="w-[340px] shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto"
+            className={[
+                // mobile: fixed full-height panel from right edge
+                "fixed right-0 top-0 h-full w-[min(340px,100vw)] z-50 md:z-auto",
+                // desktop: static side panel
+                "md:relative md:w-[340px] md:h-auto",
+                "shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto",
+            ].join(" ")}
         >
             {/* Header */}
             <div className="flex items-start justify-between p-5 border-b border-[#E7E5E4]">
@@ -303,6 +312,7 @@ function AttachmentPanel({
                 )}
             </AnimatePresence>
         </motion.div>
+        </>
     );
 }
 
@@ -383,12 +393,11 @@ export default function VaultPage() {
                     {/* List */}
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Table header */}
-                        <div className="px-6 py-2 grid grid-cols-[1fr_180px_100px_80px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
-                            {["File", "From", "Received", "Size"].map((h) => (
-                                <span key={h} className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">
-                                    {h}
-                                </span>
-                            ))}
+                        <div className="px-4 md:px-6 py-2 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_180px_100px_80px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">File</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">From</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Received</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Size</span>
                             <span />
                         </div>
 
@@ -423,9 +432,9 @@ export default function VaultPage() {
                                         <div
                                             key={item.id}
                                             onClick={() => setSelected((p) => (p?.id === item.id ? null : item))}
-                                            className={`px-6 py-3.5 grid grid-cols-[1fr_180px_100px_80px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${
+                                            className={`px-4 md:px-6 py-3.5 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_180px_100px_80px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${
                                                 isSelected
-                                                    ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[22px]"
+                                                    ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[14px] md:pl-[22px]"
                                                     : "hover:bg-[#FAFAF9]"
                                             }`}
                                         >
@@ -440,8 +449,8 @@ export default function VaultPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Sender */}
-                                            <div className="flex items-center gap-2 min-w-0">
+                                            {/* Sender — desktop only */}
+                                            <div className="hidden md:flex items-center gap-2 min-w-0">
                                                 <div className="w-6 h-6 rounded-full bg-[#F5F5F4] border border-[#E7E5E4] flex items-center justify-center shrink-0">
                                                     <span className="text-[9px] font-semibold text-[#78716C] uppercase">
                                                         {senderName.charAt(0)}
@@ -450,13 +459,13 @@ export default function VaultPage() {
                                                 <span className="text-[13px] text-[#57534E] truncate">{senderName}</span>
                                             </div>
 
-                                            {/* Date */}
-                                            <span className="text-[12px] text-[#78716C]">
+                                            {/* Date — desktop only */}
+                                            <span className="hidden md:block text-[12px] text-[#78716C]">
                                                 {format(new Date(item.emailReceivedAt), "d MMM")}
                                             </span>
 
-                                            {/* Size */}
-                                            <span className="text-[13px] text-[#78716C]">{formatSize(item.size)}</span>
+                                            {/* Size — desktop only */}
+                                            <span className="hidden md:block text-[13px] text-[#78716C]">{formatSize(item.size)}</span>
 
                                             {/* Arrow */}
                                             <div className="flex justify-end">

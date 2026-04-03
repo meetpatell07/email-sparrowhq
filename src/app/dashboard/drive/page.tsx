@@ -126,12 +126,19 @@ function FilePanel({
     };
 
     return (
+        <>
+            {/* Mobile backdrop */}
+            <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={onClose} />
         <motion.div
             initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-            className="w-[320px] shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto"
+            className={[
+                "fixed right-0 top-0 h-full w-[min(320px,100vw)] z-50 md:z-auto",
+                "md:relative md:w-[320px] md:h-auto",
+                "shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto",
+            ].join(" ")}
         >
             {/* Panel header */}
             <div className="flex items-start justify-between p-5 border-b border-[#E7E5E4]">
@@ -196,6 +203,7 @@ function FilePanel({
                 </button>
             </div>
         </motion.div>
+        </>
     );
 }
 
@@ -265,15 +273,11 @@ export default function DrivePage() {
                     {/* File list */}
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Table header */}
-                        <div className="px-6 py-2 grid grid-cols-[1fr_100px_140px_96px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
-                            {["Name", "Type", "Modified", "Size"].map((h) => (
-                                <span
-                                    key={h}
-                                    className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]"
-                                >
-                                    {h}
-                                </span>
-                            ))}
+                        <div className="px-4 md:px-6 py-2 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Name</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Type</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Modified</span>
+                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Size</span>
                             <span />
                         </div>
 
@@ -316,8 +320,8 @@ export default function DrivePage() {
                                         <div
                                             key={file.id}
                                             onClick={() => handleRowClick(file)}
-                                            className={`px-6 py-3.5 grid grid-cols-[1fr_100px_140px_96px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${isSelected
-                                                ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[22px]"
+                                            className={`px-4 md:px-6 py-3.5 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${isSelected
+                                                ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[14px] md:pl-[22px]"
                                                 : "hover:bg-[#FAFAF9]"
                                                 }`}
                                         >
@@ -331,16 +335,18 @@ export default function DrivePage() {
                                                 </span>
                                             </div>
 
-                                            {/* Type */}
-                                            <TypeBadge category={category} />
+                                            {/* Type — desktop only */}
+                                            <div className="hidden md:block">
+                                                <TypeBadge category={category} />
+                                            </div>
 
-                                            {/* Modified */}
-                                            <span className="text-[13px] text-[#78716C]">
+                                            {/* Modified — desktop only */}
+                                            <span className="hidden md:block text-[13px] text-[#78716C]">
                                                 {formatDate(file.modifiedTime)}
                                             </span>
 
-                                            {/* Size */}
-                                            <span className="text-[13px] text-[#78716C]">
+                                            {/* Size — desktop only */}
+                                            <span className="hidden md:block text-[13px] text-[#78716C]">
                                                 {formatSize(sizeBytes)}
                                             </span>
 

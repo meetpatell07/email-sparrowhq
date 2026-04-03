@@ -370,18 +370,17 @@ export async function createGmailDraft(
 // Every color MUST be in Gmail's allowed palette — any other hex is rejected.
 // Full palette: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
-    to_do:        { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
+    important:    { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
     follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" }, // dark blue
     scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" }, // green
     finance:      { backgroundColor: "#0b804b", textColor: "#ffffff" }, // dark green
-    work:         { backgroundColor: "#3c78d8", textColor: "#ffffff" }, // blue
     personal:     { backgroundColor: "#8e63ce", textColor: "#ffffff" }, // purple
     notification: { backgroundColor: "#ffad47", textColor: "#000000" }, // orange
     marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" }, // dark red
 };
 
 // Convert a category key to a human-readable Gmail label name.
-// e.g.  to_do → "To Do"   follow_up → "Follow Up"
+// e.g.  important → "Important"   follow_up → "Follow Up"
 function categoryToLabelName(category: string): string {
     return category
         .split("_")
