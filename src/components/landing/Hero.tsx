@@ -37,13 +37,7 @@ export function Hero() {
       {/* Background gradient */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--lp-gradient-hero)" }} />
 
-      {/* Decorative blobs */}
-      <div className="bg-blob absolute -top-32 left-1/4 w-[500px] h-[500px] rounded-full opacity-20 blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)" }} />
-      <div className="bg-blob absolute top-40 right-1/4 w-[400px] h-[400px] rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(168,85,247,0.4), transparent 70%)" }} />
-
-      {/* 3D canvas — desktop only */}
+{/* 3D canvas — desktop only */}
       <div className="hidden lg:block absolute inset-0 pointer-events-none">
         <HeroScene />
       </div>

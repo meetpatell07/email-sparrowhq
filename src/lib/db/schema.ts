@@ -62,7 +62,7 @@ export const emails = pgTable("emails", {
     receivedAt: timestamp("receivedAt").notNull(),
     sender: text("sender"), // The From header
     recipient: text("recipient"), // To header
-    categories: text("categories").array(), // e.g. ["to_do", "work"]
+    categories: text("categories").array(), // e.g. ["important"]
     isProcessed: boolean("isProcessed").default(false),
     createdAt: timestamp("createdAt").defaultNow(),
 });

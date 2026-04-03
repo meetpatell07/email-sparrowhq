@@ -47,14 +47,24 @@ export async function POST(req: NextRequest) {
 
     if (!userRecord.length) return NextResponse.json({ ok: true });
 
-    const appUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!appUrl || appUrl.includes("localhost") || appUrl.includes("127.0.0.1")) {
+        console.error(`[webhook] NEXT_PUBLIC_API_URL is not set to a public URL ("${appUrl}"). Cannot publish to QStash — set this env var in production.`);
+        return NextResponse.json({ ok: true });
+    }
 
     // Publish to QStash — it will retry up to 3× on failure
-    await qstash.publishJSON({
-        url: `${appUrl}/api/ingest/process-history`,
-        body: { userId: userRecord[0].id, historyId: parseInt(historyId) },
-        retries: 3,
-    });
+    // Always return 200 to Pub/Sub regardless — non-200 causes exponential retry storms.
+    try {
+        await qstash.publishJSON({
+            url: `${appUrl}/api/ingest/process-history`,
+            body: { userId: userRecord[0].id, historyId: parseInt(historyId) },
+            retries: 3,
+        });
+        console.log(`[webhook] Queued processing for userId=${userRecord[0].id} historyId=${historyId}`);
+    } catch (err: any) {
+        console.error(`[webhook] QStash publish failed — message will be lost:`, err?.message ?? err);
+    }
 
     return NextResponse.json({ ok: true });
 }

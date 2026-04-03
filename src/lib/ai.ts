@@ -1,15 +1,15 @@
 import { z } from "zod";
 
 const VALID_CATEGORIES = [
-    "to_do", "follow_up", "scheduled",
-    "finance", "work", "personal",
+    "important", "follow_up", "scheduled",
+    "finance", "personal",
     "notification", "marketing",
 ] as const;
 
 type Category = typeof VALID_CATEGORIES[number];
 
 const classificationSchema = z.object({
-    categories: z.array(z.enum(VALID_CATEGORIES)).min(1).max(2),
+    categories: z.array(z.enum(VALID_CATEGORIES)).min(1).transform(arr => arr.slice(0, 1)),
 });
 
 const invoiceSchema = z.object({
@@ -21,32 +21,29 @@ const invoiceSchema = z.object({
 });
 
 export async function callGroq(prompt: string): Promise<string> {
-    const apiKey = process.env.GROQ_API_KEY;
+    const baseUrl = (process.env.OLLAMA_URL ?? "http://localhost:11434").replace(/\/$/, "");
+    const model   = process.env.OLLAMA_MODEL ?? "llama3.2";
 
-    if (!apiKey) {
-        throw new Error("GROQ_API_KEY environment variable is not set");
-    }
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
+            "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+            model,
             messages: [{ role: "user", content: prompt }],
-            max_tokens: 512,
+            stream: false,
         }),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Groq error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Ollama error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
+    return data.choices?.[0]?.message?.content ?? "";
 }
 
 function parseJSONObject(text: string): unknown {
@@ -67,13 +64,12 @@ export async function classifyEmail(subject: string, snippet: string, body?: str
 ## Categories
 
 Action categories (what the user needs to do):
-- to_do: Email requires a reply or action from the user (includes drafting AI replies)
+- important: Email requires a reply or action from the user (includes drafting AI replies)
 - follow_up: User has likely already replied and is waiting for a response (includes drafting AI replies)
 - scheduled: Email is about meetings, calendar events, or scheduling
 
 Context categories (what the email is about):
 - finance: Invoices, receipts, billing, payments
-- work: Clients, colleagues, business-related communication
 - personal: Friends, family, non-work communication
 
 Passive categories (low priority):
@@ -82,12 +78,10 @@ Passive categories (low priority):
 
 ## Instructions
 - Return a JSON object only (no explanations).
-- Always return an array of categories (minimum 1, maximum 2).
-- Choose ALL categories that apply (multi-label classification).
-- If unsure between "work" and "personal", prefer "work" if the tone is professional.
+- Always return exactly one category (the best match).
 - Only use the exact category keys listed above.
 
-Return ONLY: { "categories": ["category1"] } or { "categories": ["category1", "category2"] }
+Return ONLY: { "categories": ["category1"] }
 
 Email Content:
 ${content}`;

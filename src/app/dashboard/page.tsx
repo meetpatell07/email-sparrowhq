@@ -26,9 +26,9 @@ export default function DashboardPage() {
     return (
         <DashboardLayout>
             <div className="min-h-full pb-20">
-                <div className="px-6 pt-6 space-y-6 max-w-4xl mx-auto">
+                <div className="px-4 md:px-6 pt-4 md:pt-6 space-y-6 max-w-4xl mx-auto">
                     {/* Filters Row */}
-                    <div className="flex items-center gap-6 border-b border-[#E7E5E4] pb-3">
+                    <div className="flex items-center gap-4 md:gap-6 border-b border-[#E7E5E4] pb-3 overflow-x-auto no-scrollbar">
                         <button 
                             onClick={() => setActiveTab("All Sources")}
                             className={`text-[13px] font-medium transition-colors ${activeTab === "All Sources" ? "text-[#1C1917] pb-3 -mb-3 border-b-2 border-[#1C1917]" : "text-[#78716C] hover:text-[#1C1917]"}`}
@@ -84,31 +84,29 @@ export default function DashboardPage() {
                                             const senderInitial = (email.sender || "U").charAt(0).toUpperCase();
                                             
                                             return (
-                                                <div key={email.id} className="bg-white border border-[#E7E5E4] rounded-lg p-3 hover:border-[#D6D3D1] transition-colors relative flex gap-3 group items-center">
+                                                <div key={email.id} className="bg-white border border-[#E7E5E4] rounded-lg p-3 hover:border-[#D6D3D1] transition-colors flex gap-3 group items-center">
                                                     {/* Avatar */}
                                                     <div className="w-8 h-8 rounded-full bg-[#F5F5F4] text-[#78716C] font-semibold text-[13px] flex items-center justify-center shrink-0">
                                                         {senderInitial}
                                                     </div>
 
                                                     {/* Content */}
-                                                    <div className="flex-1 min-w-0 pr-24 relative">
-                                                        <div className="flex items-center gap-2 mb-0.5">
-                                                            <span className="text-[13px] font-semibold text-[#1C1917] truncate max-w-[160px]">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                            <span className="text-[13px] font-semibold text-[#1C1917] truncate">
                                                                 {email.senderName || email.sender?.split('<')[0]?.trim() || "Unknown"}
                                                             </span>
-                                                            <span className="text-[13px] font-medium text-[#1C1917] truncate">
-                                                                {email.subject}
-                                                            </span>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className="text-[12px] text-[#A8A29E] whitespace-nowrap">{timeStr}</span>
+                                                                <img src="https://cdn.brandfetch.io/gmail.com/icon/theme/dark/fallback/transparent" alt="Gmail" className="w-4 h-4 object-contain opacity-50 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                                                            </div>
                                                         </div>
-                                                        <p className="text-[13px] text-[#78716C] truncate">
+                                                        <p className="text-[13px] font-medium text-[#1C1917] truncate">
+                                                            {email.subject}
+                                                        </p>
+                                                        <p className="text-[12px] text-[#78716C] truncate mt-0.5">
                                                             {email.snippet?.replace(/&#39;/g, "'").replace(/&quot;/g, '"')}
                                                         </p>
-                                                        
-                                                        {/* Absolute Time & Icon Badge */}
-                                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                                                            <span className="text-[12px] text-[#A8A29E] whitespace-nowrap">{timeStr}</span>
-                                                            <img src="https://cdn.brandfetch.io/gmail.com/icon/theme/dark/fallback/transparent" alt="Gmail" className="w-4 h-4 object-contain opacity-50 group-hover:opacity-100 transition-opacity" />
-                                                        </div>
                                                     </div>
                                                 </div>
                                             );

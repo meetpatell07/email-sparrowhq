@@ -92,7 +92,7 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
             .orderBy(desc(emails.receivedAt))
             .limit(5);
 
-        const emailToReply = recentEmails.find(e => e.categories?.includes("to_do") || e.categories?.includes("follow_up")) || recentEmails[0];
+        const emailToReply = recentEmails.find(e => e.categories?.includes("important") || e.categories?.includes("follow_up")) || recentEmails[0];
 
         if (!emailToReply) {
             return "I don't see any emails to draft a reply for. Your inbox seems empty!";
