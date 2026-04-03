@@ -3,6 +3,7 @@ import { Figtree, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/provider/theme-provider";
 import { LenisProvider } from "@/components/providers/LenisProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const figtree = Figtree({
   variable: "--font-body",
@@ -39,6 +40,7 @@ export default function RootLayout({
             {children}
           </LenisProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

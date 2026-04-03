@@ -1,43 +1,56 @@
 "use client";
 
-import { Sidebar } from "@/components/Sidebar";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { authClient } from "@/lib/auth-client";
-import { SignOutButton } from "@/components/SignOutButton";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { UserCircleIcon, Settings01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import Link from "next/link";
 
 export default function ProfilePage() {
     const { data: session } = authClient.useSession();
     const user = session?.user;
 
     return (
-        <div className="flex h-screen bg-white font-sans overflow-hidden">
-            <Sidebar />
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                
-                <div className="min-h-full pb-20">
-                    <div className="max-w-xl mx-auto">
-                        <div className="flex items-center gap-6 mb-8">
-                            <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200 shadow-sm flex-shrink-0">
-                                {user?.image ? (
-                                    <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-black text-white text-2xl font-bold">
-                                        {(user?.name || "U").charAt(0)}
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-black">{user?.name || "User Name"}</h2>
-                                <p className="text-gray-500">{user?.email || "user@example.com"}</p>
-                            </div>
-                        </div>
+        <DashboardLayout>
+            <div className="min-h-full pb-20">
+                <div className="p-4 md:p-6 max-w-xl mx-auto space-y-4">
 
-                        <div className="border-t border-gray-100 pt-6">
-                            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Account Actions</h3>
-                            <SignOutButton />
+                    {/* Avatar + name */}
+                    <div className="bg-white border border-[#E7E5E4] rounded-lg px-5 py-6 flex flex-col items-center gap-3 text-center">
+                        <div className="w-16 h-16 rounded-full overflow-hidden bg-[#F5F5F4] border border-[#E7E5E4]">
+                            {user?.image ? (
+                                <img src={user.image} alt={user.name ?? ""} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <HugeiconsIcon icon={UserCircleIcon} size={32} className="text-[#78716C]" />
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-[17px] font-semibold text-[#1C1917]">{user?.name || "—"}</p>
+                            <p className="text-[13px] text-[#78716C] mt-0.5">{user?.email || "—"}</p>
                         </div>
                     </div>
+
+                    {/* Quick link to full settings */}
+                    <Link
+                        href="/dashboard/settings"
+                        className="flex items-center justify-between gap-4 bg-white border border-[#E7E5E4] rounded-lg px-5 py-4 hover:bg-[#FAFAF9] transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-[6px] bg-[#F5F5F4] flex items-center justify-center">
+                                <HugeiconsIcon icon={Settings01Icon} size={17} className="text-[#57534E]" />
+                            </div>
+                            <div>
+                                <p className="text-[14px] font-medium text-[#1C1917]">Settings & connections</p>
+                                <p className="text-[12px] text-[#78716C] mt-0.5">Manage your Google account and session</p>
+                            </div>
+                        </div>
+                        <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-[#A8A29E] shrink-0" />
+                    </Link>
+
                 </div>
-            </main>
-        </div>
+            </div>
+        </DashboardLayout>
     );
 }
