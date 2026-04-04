@@ -1,34 +1,37 @@
-# EmailHQ
+# SparrowHQ
 
-An AI-powered email management platform that connects to Gmail, Google Calendar, and Google Drive. Automatically categorises emails, generates draft replies, extracts invoice data, manages your inbox through a conversational AI assistant, and lets you browse and act on Drive files — all from a single dashboard.
+An AI-powered email management platform that connects to Gmail, Google Calendar, and Google Drive. Automatically classifies emails into smart categories, generates draft replies, extracts invoice data, applies Gmail labels in real time via a Google Cloud Pub/Sub + QStash pipeline, stores attachments in Cloudflare R2, and lets you manage your inbox through a conversational AI assistant — all from a minimal, mobile-responsive dashboard.
 
 ## Features
 
-- **Smart Categorisation** — Classifies emails as Personal, Invoice, Client, Urgent, Marketing, or Notification using Groq (Llama 3.3)
-- **Auto-Draft Replies** — Generates AI drafts for urgent and client emails, saved directly to Gmail Drafts
-- **Invoice Extraction** — Detects invoices and extracts vendor name, amount, currency, and due date
-- **AI Chat Assistant** — Natural language commands: draft replies, check calendar, create events, list emails
-- **Google Calendar** — View schedule, check availability, and create events via the chat panel
-- **Google Drive Browser** — Browse all Drive files (Docs, Sheets, Slides, PDFs) with filter tabs, open in Drive, or compose an email with the file link
-- **Redis Caching** — Email list and Drive file list cached in Upstash Redis for fast dashboard loads
-- **Async Ingestion Pipeline** — Cron-triggered ingest publishes per-email jobs to Upstash QStash; each email is processed independently with automatic retries
-- **Rate Limiting** — Upstash Redis rate limits on ingest (1/min) and AI chat (20 req/min per user)
-- **Attachment Storage** — Email attachments uploaded to Cloudflare R2
+- **Real-time Ingestion Pipeline** — Gmail Pub/Sub push → QStash queue → per-email processing with automatic retries. No polling required.
+- **Smart Classification** — Classifies every email into a single category: `Important`, `Follow Up`, `Scheduled`, `Finance`, `Personal`, `Notification`, or `Marketing` using a local Ollama/LLM model.
+- **Gmail Label Sync** — Creates and applies colour-coded labels directly in Gmail automatically on every ingest, keeping your inbox organised without visiting the dashboard.
+- **Auto-Draft Replies** — Generates AI reply drafts for `Important`, `Follow Up`, and `Scheduled` emails, saved to Gmail Drafts with a pending-approval workflow.
+- **Invoice Extraction** — Detects finance emails and extracts vendor name, amount, currency, and due date into a structured invoices table.
+- **Attachment Vault** — Email attachments uploaded to Cloudflare R2, browseable in the Vault with download, save-to-Drive, and draft-reply actions.
+- **AI Chat Assistant** — Natural language interface: draft replies, check calendar, create events, list emails — powered by the same local LLM.
+- **Google Calendar** — View events grouped by day with attendee avatars, duration, and Google Meet join links. Covers past and upcoming events.
+- **Google Drive Browser** — Browse all Drive files (Docs, Sheets, Slides, PDFs) with category filter tabs, file detail panel, open-in-Drive, and send-as-email actions.
+- **Connected Accounts** — Settings page shows live connection status per Google account (token health, Gmail watch expiry, granted scopes) with one-click reconnect and disconnect.
+- **Mobile-Responsive** — Full bottom navigation, slide-in sidebar drawer, and responsive tables on all screen sizes.
+- **Vercel Analytics** — Page view tracking via `@vercel/analytics`.
 
 ## Tech Stack
 
-| Layer        | Technology                                   |
-|--------------|----------------------------------------------|
-| Framework    | Next.js 16 (App Router)                      |
-| Database     | Neon PostgreSQL + Drizzle ORM                |
-| Auth         | Better Auth with Google OAuth 2.0            |
-| AI           | Groq API — `llama-3.3-70b-versatile`         |
-| APIs         | Gmail API, Google Calendar API, Drive API v3 |
-| Queue        | Upstash QStash (async email processing)      |
-| Cache        | Upstash Redis (email list, drive files)      |
-| Rate Limit   | Upstash Ratelimit                            |
-| Storage      | Cloudflare R2 (email attachments)            |
-| Styling      | Tailwind CSS v4                              |
+| Layer        | Technology                                      |
+|--------------|-------------------------------------------------|
+| Framework    | Next.js (App Router)                            |
+| Database     | Neon PostgreSQL + Drizzle ORM                   |
+| Auth         | Better Auth with Google OAuth 2.0               |
+| AI / LLM     | Ollama (local) — configurable model via env     |
+| APIs         | Gmail API, Google Calendar API, Drive API v3    |
+| Pub/Sub      | Google Cloud Pub/Sub (real-time Gmail push)     |
+| Queue        | Upstash QStash (async per-email processing)     |
+| Cache        | Upstash Redis                                   |
+| Storage      | Cloudflare R2 (email attachments)               |
+| Styling      | Tailwind CSS v4                                 |
+| Analytics    | Vercel Analytics                                |
 
 ## Getting Started
 
@@ -36,28 +39,35 @@ An AI-powered email management platform that connects to Gmail, Google Calendar,
 
 - Node.js 18+
 - PostgreSQL database (Neon recommended)
-- Google Cloud project with Gmail, Calendar, and Drive APIs enabled
+- Google Cloud project with Gmail, Calendar, and Drive APIs enabled + Pub/Sub topic configured
 - Upstash account (Redis + QStash)
-- Groq API key
+- Ollama instance (local or remote) with a model loaded
 
 ### Environment Variables
 
-Create a `.env` file:
+Create a `.env.local` file:
 
 ```env
+# App
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_API_URL=https://yourdomain.com
+
 # Database
 DATABASE_URL=postgresql://...
 
 # Auth
-BETTER_AUTH_SECRET=your-secret
-NEXT_PUBLIC_API_URL=https://yourdomain.com
+BETTER_AUTH_SECRET=your-secret-min-32-chars
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
 
-# AI
-GROQ_API_KEY=...
+# Google Cloud Pub/Sub
+PUBSUB_WEBHOOK_SECRET=random-secret-token
+
+# AI (Ollama)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
 
 # Upstash Redis
 UPSTASH_REDIS_REST_URL=...
@@ -68,29 +78,26 @@ QSTASH_TOKEN=...
 QSTASH_CURRENT_SIGNING_KEY=...
 QSTASH_NEXT_SIGNING_KEY=...
 
-# Storage (Cloudflare R2)
+# Cloudflare R2
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET_NAME=...
-R2_ENDPOINT=...
-
-# Cron (set a random secret and use it in your cron job's Authorization header)
-CRON_SECRET=...
+R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com
 
 # Token encryption (exactly 32 characters)
-ENCRYPTION_KEY=...
+ENCRYPTION_KEY=your-32-char-encryption-key-here
 ```
 
 ### Installation
 
 ```bash
-pnpm install
+npm install
 
 # Push database schema
 npx drizzle-kit push
 
 # Start dev server
-pnpm dev
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
@@ -98,24 +105,38 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
 ## How the Ingestion Pipeline Works
 
 ```
-GET /api/ingest  (triggered by external cron)
+Gmail receives email
   │
-  ├─ Rate limit check (Redis — 1 call/min globally)
-  ├─ For each Google-linked user:
-  │    └─ List new Gmail message IDs
-  │         └─ Publish each as a QStash job → POST /api/ingest/process
-  └─ Returns { queued: N }
-
-POST /api/ingest/process  (called by QStash, retries up to 3×)
-  ├─ Verify QStash signature
-  ├─ Fetch full Gmail message
-  ├─ Store email in DB
-  ├─ Upload attachments to R2
-  ├─ Classify with Groq AI → update category
-  ├─ Apply Gmail label
-  ├─ If invoice → extract data → store in invoices table
-  └─ If urgent/client → generate draft → save to Gmail + DB
+  └─ Google Cloud Pub/Sub push → POST /api/gmail/webhook
+       ├─ Validate shared secret
+       ├─ Decode notification (emailAddress + historyId)
+       ├─ Look up user by email in DB
+       └─ Publish to QStash → POST /api/ingest/process-history
+            │  (retries up to 3× on failure)
+            │
+            └─ processSingleEmail(userId, messageId)
+                 ├─ Fetch full Gmail message
+                 ├─ Decode body (handles multipart nesting)
+                 ├─ Insert email record (skip if duplicate)
+                 ├─ Upload attachments → Cloudflare R2
+                 ├─ Classify with AI → update category in DB
+                 ├─ Apply Gmail label (awaited — not fire-and-forget)
+                 ├─ If finance → extract invoice data → store
+                 └─ If important/follow_up/scheduled → generate draft
+                      └─ Save to Gmail Drafts + drafts table
 ```
+
+## Email Categories
+
+| Category       | Colour  | Triggers Draft |
+|----------------|---------|----------------|
+| `important`    | Red     | ✅              |
+| `follow_up`    | Blue    | ✅              |
+| `scheduled`    | Green   | ✅              |
+| `finance`      | Dark Green | ❌ (invoice extraction instead) |
+| `personal`     | Purple  | ❌              |
+| `notification` | Orange  | ❌              |
+| `marketing`    | Dark Red| ❌              |
 
 ## Project Structure
 
@@ -123,53 +144,58 @@ POST /api/ingest/process  (called by QStash, retries up to 3×)
 src/
 ├── app/
 │   ├── api/
-│   │   ├── auth/            # Better Auth endpoints
-│   │   ├── emails/          # Fetch emails (Redis-cached)
-│   │   ├── calendar/        # Calendar CRUD
-│   │   ├── chat/            # AI chat (rate-limited)
-│   │   ├── drafts/          # Draft management
-│   │   ├── drive/           # Drive files (Redis-cached)
+│   │   ├── auth/                  # Better Auth endpoints
+│   │   ├── emails/                # Fetch & get single email
+│   │   ├── calendar/              # Calendar events + availability
+│   │   ├── chat/                  # AI chat (rate-limited)
+│   │   ├── drafts/                # Draft CRUD
+│   │   ├── drive/                 # Drive file browser
+│   │   ├── vault/                 # Attachment vault + R2 actions
+│   │   ├── settings/connections/  # Connected account info
 │   │   └── ingest/
-│   │       ├── route.ts     # Cron trigger → publishes QStash jobs
-│   │       └── process/     # QStash callback → processes one email
+│   │       ├── route.ts           # Manual sync trigger
+│   │       └── process-history/   # QStash callback handler
+│   ├── gmail/webhook/             # Google Pub/Sub push receiver
 │   ├── dashboard/
-│   │   ├── emails/          # Inbox view
-│   │   ├── calendar/        # Calendar view
-│   │   ├── drafts/          # AI draft review
-│   │   ├── invoices/        # Invoice tracker
-│   │   ├── categories/      # Category browser
-│   │   ├── drive/           # Google Drive browser
-│   │   ├── settings/        # User settings
-│   │   └── profile/         # Profile page
-│   ├── privacy/             # Privacy Policy
-│   ├── terms/               # Terms of Service
-│   └── login/               # Auth pages
+│   │   ├── page.tsx               # Overview (Gmail · Drive · Calendar tabs)
+│   │   ├── emails/                # Inbox list
+│   │   ├── email/[id]/            # Email detail view
+│   │   ├── drafts/                # AI draft review & approval
+│   │   ├── vault/                 # Attachment vault
+│   │   ├── drive/                 # Google Drive browser
+│   │   ├── categories/            # Category reference
+│   │   ├── settings/              # Account, connections, sign-out
+│   │   └── profile/               # Profile page
+│   ├── login/                     # Auth page
+│   ├── privacy/                   # Privacy Policy
+│   └── terms/                     # Terms of Service
 ├── components/
-│   ├── AIChatPanel.tsx      # Right-panel AI chat
-│   ├── DashboardLayout.tsx  # Layout wrapper
-│   ├── EmailRow.tsx         # Email list item
-│   └── Sidebar.tsx          # Navigation
+│   ├── DashboardLayout.tsx        # Shell: sidebar, header, bottom nav, AI chat
+│   ├── Sidebar.tsx                # Desktop nav + mobile drawer
+│   ├── AIChatPanel.tsx            # Right-panel AI assistant
+│   ├── EmailRow.tsx               # Email list item with live classification
+│   ├── DriveFilesTab.tsx          # Drive file grid
+│   └── SignOutButton.tsx          # Parallel sign-out + token clear
 └── lib/
-    ├── ai.ts                # Groq: classify, draft, extract
-    ├── auth.ts              # Better Auth config
-    ├── calendar.ts          # Google Calendar client
-    ├── drive.ts             # Google Drive client
-    ├── gmail.ts             # Gmail API client
-    ├── ingest.ts            # listNewEmailIds + processSingleEmail
-    ├── redis.ts             # Upstash Redis client
-    ├── ratelimit.ts         # Rate limiter instances
-    ├── qstash.ts            # QStash client + receiver
-    ├── encryption.ts        # AES-256 token encryption
-    ├── s3.ts                # Cloudflare R2 client
-    └── db/                  # Drizzle schema & connection
+    ├── ai.ts                      # classify, generateDraft, extractInvoice
+    ├── auth.ts                    # Better Auth + encrypted token adapter
+    ├── calendar.ts                # Google Calendar client
+    ├── gmail.ts                   # Gmail client + label management
+    ├── ingest.ts                  # listNewEmailIds + processSingleEmail
+    ├── encryption.ts              # AES-256-CBC token encryption
+    ├── s3.ts                      # Cloudflare R2 client
+    ├── qstash.ts                  # QStash client + receiver
+    └── db/                        # Drizzle schema & connection
 ```
 
 ## Security
 
-- Google OAuth refresh tokens encrypted at rest with AES-256-CBC
-- All Google API calls are server-side only
-- QStash webhook signature verified on every ingest callback
-- Raw email body content not persisted beyond the processing request
+- Google OAuth refresh tokens encrypted at rest with AES-256-CBC before DB storage
+- All Google API calls are server-side only — no tokens exposed to the client
+- QStash webhook signatures verified on every ingest callback
+- Gmail Pub/Sub webhook validated via shared secret query parameter
+- Connected account disconnect clears both access and refresh tokens from DB
+- Raw email body content is never persisted beyond the processing request
 
 ## License
 

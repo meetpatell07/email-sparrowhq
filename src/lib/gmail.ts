@@ -379,13 +379,22 @@ const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string 
     marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" }, // dark red
 };
 
-// Convert a category key to a human-readable Gmail label name.
-// e.g.  important → "Important"   follow_up → "Follow Up"
+// Maps internal category keys to Gmail label display names.
+// "important" → "Priority" and "scheduled" → "Planned" to avoid conflicts
+// with Gmail's built-in system labels ("IMPORTANT", "SCHEDULED") which
+// cause a 409 when you try to create a user label with the same name.
+const CATEGORY_LABEL_NAMES: Record<string, string> = {
+    important:    "Priority",
+    follow_up:    "Follow Up",
+    scheduled:    "Planned",
+    finance:      "Finance",
+    personal:     "Personal",
+    notification: "Notification",
+    marketing:    "Marketing",
+};
+
 function categoryToLabelName(category: string): string {
-    return category
-        .split("_")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    return CATEGORY_LABEL_NAMES[category] ?? category;
 }
 
 // In-memory cache per user: { userId → { category → labelId } }

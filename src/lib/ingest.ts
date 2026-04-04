@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { user, account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
@@ -62,6 +62,16 @@ export async function processSingleEmail(
     const payload = fullMsg.data.payload;
     if (!payload) return null;
 
+    // ── Draft-loop guard ────────────────────────────────────────────────────
+    // Gmail fires a history event when we save a draft reply, which would
+    // re-enter this function, get classified as "important", and create
+    // another draft — looping forever. Block it at the earliest point.
+    const labelIds = fullMsg.data.labelIds ?? [];
+    if (labelIds.includes('DRAFT') || labelIds.includes('SENT')) {
+        console.log(`[ingest] Skipping ${messageId} — is DRAFT or SENT message`);
+        return null;
+    }
+
     const headers = payload.headers || [];
     const subject = headers.find((h) => h.name === 'Subject')?.value || '(No Subject)';
     const from = headers.find((h) => h.name === 'From')?.value || '';
@@ -69,6 +79,20 @@ export async function processSingleEmail(
     const dateStr = headers.find((h) => h.name === 'Date')?.value;
     const receivedAt = dateStr ? new Date(dateStr) : new Date();
     const snippet = fullMsg.data.snippet || '';
+
+    // ── Self-sender guard ───────────────────────────────────────────────────
+    // If the user sent this message themselves (e.g. a sent mail event),
+    // skip it entirely — no need to classify or draft a reply to yourself.
+    const [userRecord] = await db.select({ email: user.email })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+    const userEmail = userRecord?.email ?? null;
+
+    if (userEmail && from.toLowerCase().includes(userEmail.toLowerCase())) {
+        console.log(`[ingest] Skipping ${messageId} — sender is self (${from})`);
+        return null;
+    }
 
     // Decode body — must search recursively because Gmail nests text/plain
     // inside multipart/alternative which itself lives inside multipart/mixed.
@@ -181,14 +205,23 @@ export async function processSingleEmail(
         categories.includes('scheduled');
 
     if (needsDraft) {
-        try {
-            // Resolve sender email for the From: header (required by RFC 2822)
-            const [userRecord] = await db.select({ email: user.email })
-                .from(user)
-                .where(eq(user.id, userId))
-                .limit(1);
-            const userEmail = userRecord?.email ?? null;
+        // ── Thread deduplication guard ──────────────────────────────────────
+        // If this thread already has a draft (pending or otherwise), don't
+        // create another one. This is the last line of defence against loops
+        // that slip past the DRAFT/SENT label checks above.
+        const threadId = fullMsg.data.threadId;
+        const existingDraft = threadId
+            ? await db.select({ id: drafts.id })
+                .from(drafts)
+                .innerJoin(emails, eq(drafts.emailId, emails.id))
+                .where(and(eq(emails.threadId, threadId), eq(emails.userId, userId)))
+                .limit(1)
+            : [];
 
+        if (existingDraft.length > 0) {
+            console.log(`[ingest] Skipping draft for ${messageId} — thread ${threadId} already has a draft`);
+        } else
+        try {
             const draftContent = await generateDraftReply(subject, body, from);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;

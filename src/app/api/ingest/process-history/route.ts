@@ -76,12 +76,43 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ processed: 0 });
     }
 
+    // Labels that must never be processed — checked before any DB or AI work.
+    // This is the primary guard against draft re-processing loops:
+    // when createGmailDraft fires a Pub/Sub notification, Gmail's labelId
+    // filter on history.list applies at the thread level, so a draft's
+    // message ID can still appear in messagesAdded. Catching it here with a
+    // cheap format=minimal fetch stops the loop before it starts.
+    const SKIP_LABELS = new Set(['DRAFT', 'SENT', 'SPAM', 'TRASH']);
+
     // Dedup + process
     let processed = 0;
     for (const messageId of messageIds) {
         const dedupKey = `processed:${messageId}`;
         const alreadyDone = await redis.get(dedupKey);
         if (alreadyDone) continue;
+
+        // ── Label pre-check (cheap, format=minimal) ─────────────────────────
+        // Fetch only headers/labels — no body decoding, no DB work yet.
+        // Skip drafts, sent mail, spam, and trash immediately.
+        try {
+            const meta = await gmail.users.messages.get({
+                userId: 'me',
+                id: messageId,
+                format: 'minimal',
+            });
+            const msgLabels = meta.data.labelIds ?? [];
+            if (msgLabels.some((l) => SKIP_LABELS.has(l))) {
+                console.log(`[process-history] Skipping ${messageId} — labels: [${msgLabels.join(', ')}]`);
+                // Mark as handled so retries don't re-attempt this message
+                await redis.set(dedupKey, "1", { ex: 60 * 60 * 24 * 7 });
+                continue;
+            }
+        } catch (metaErr: any) {
+            // If metadata fetch fails (e.g. message deleted), skip gracefully
+            console.error(`[process-history] Label pre-check failed for ${messageId}:`, metaErr?.message ?? metaErr);
+            await redis.set(dedupKey, "1", { ex: 60 * 60 * 24 * 7 });
+            continue;
+        }
 
         // Mark as in-flight before processing to prevent concurrent duplicates
         await redis.set(dedupKey, "1", { ex: 60 * 60 * 24 * 7 });
