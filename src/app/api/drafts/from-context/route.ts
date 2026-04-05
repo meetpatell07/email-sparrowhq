@@ -34,7 +34,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: cors });
         }
 
-        const userId = session.user.id;
+        const userId    = session.user.id;
+        const senderName = session.user.name || session.user.email;
 
         // Rate limit: 10 drafts per user per hour
         const { success } = await extensionDraftRatelimit.limit(userId);
@@ -65,29 +66,44 @@ export async function POST(request: Request) {
             );
         }
 
-        // Truncate page content to keep prompt within model context limits
+        // Use up to 4000 chars of page content (content script already truncates to 5000 words)
         const truncatedContent = pageContent
-            ? pageContent.slice(0, 3000)
-            : "(No page content extracted — rely on title and URL for context)";
+            ? pageContent.slice(0, 4000)
+            : "(No page content — use the page title and URL for context)";
 
-        const prompt = `You are drafting a professional email on behalf of the user.
+        const prompt = `You are writing a professional email on behalf of ${senderName}.
 
-Page Context:
+== PAGE CONTEXT ==
 URL: ${pageUrl}
 Title: ${pageTitle}
-Content:
+
 ${truncatedContent}
+== END PAGE CONTEXT ==
 
-User Intent: ${intent}
-Recipient: ${recipientEmail}
+Sender: ${senderName}
+Recipient email: ${recipientEmail}
+Intent: ${intent}
 
-Instructions:
-- Write a concise, professional email (3–5 sentences in the body).
-- Derive a short, relevant subject line from the intent and page context.
-- No greeting or sign-off — just subject and body.
-- Match formality to the context.
+== INSTRUCTIONS ==
+Write a complete, properly structured email. The body MUST follow this exact structure with blank lines between each section:
 
-Return ONLY valid JSON with no explanation:
+1. Greeting line — "Hi," or "Dear Sir/Madam," (use "Hi," if the context is informal, "Dear Sir/Madam," if formal)
+2. Blank line
+3. Introduction paragraph — one sentence introducing who you are and why you are writing
+4. Blank line
+5. Main body paragraph(s) — 2–4 sentences expanding on the intent, referencing specific details from the page context
+6. Blank line
+7. Closing paragraph — one sentence with a clear call to action or expression of interest
+8. Blank line
+9. Sign-off — "Best regards," on its own line, then "${senderName}" on the next line
+
+Rules:
+- Use \\n\\n between every section (double newline = blank line)
+- Subject line must be specific and derived from the page context and intent (not generic)
+- Do NOT include the subject line inside the body
+- Match formality to context (job applications → formal, pricing inquiry → semi-formal)
+
+Return ONLY valid JSON (no markdown, no explanation):
 { "subject": "...", "body": "..." }`;
 
         const raw = await callGroq(prompt);

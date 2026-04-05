@@ -122,31 +122,101 @@ ${content}`;
     return invoiceSchema.parse(parsed);
 }
 
+// Extract a usable first name from a Gmail From header.
+// "John Smith <john@example.com>" → "John"
+// "john@example.com" → "John"
+function extractSenderFirstName(from: string): string {
+    const displayMatch = from.match(/^"?([^"<@\n]+)"?\s*</);
+    if (displayMatch) {
+        const firstName = displayMatch[1].trim().split(/\s+/)[0];
+        if (firstName) return firstName;
+    }
+    const emailPrefix = from.match(/([^@<\s]+)@/);
+    if (emailPrefix) {
+        const name = emailPrefix[1].replace(/[._-]/g, " ").split(/\s+/)[0];
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+    return "there";
+}
+
+// Decide whether an incoming email actually warrants an auto-draft reply.
+// Returns false for automated alerts, FYI-only emails, no-reply senders, etc.
+export async function shouldGenerateDraft(
+    subject: string,
+    body: string,
+    sender: string
+): Promise<boolean> {
+    const content = `From: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 1500)}`;
+    const prompt = `Analyze this email and decide whether it genuinely requires a human reply.
+
+Emails that NEED a draft reply:
+- A person asking a direct question expecting your answer
+- A request: meeting invite, help, information, approval, quote
+- A follow-up from someone waiting on your response
+- Professional/personal correspondence addressed directly to you
+
+Emails that do NOT need a draft reply:
+- Automated notifications, system alerts, or monitoring emails
+- Order confirmations, shipping updates, receipts, invoices
+- Password resets, OTPs, verification codes
+- Newsletters or marketing, even if relevant to you
+- Emails from noreply@, do-not-reply@, or automated senders
+- Mailing list broadcasts or mass announcements
+- Calendar invites handled by calendar apps
+- FYI-only emails where a reply is clearly not expected
+
+Email:
+${content}
+
+Return ONLY valid JSON: { "needsDraft": true } or { "needsDraft": false }`;
+
+    try {
+        const text = await callGroq(prompt);
+        const parsed = parseJSONObject(text) as { needsDraft?: boolean };
+        return parsed.needsDraft === true;
+    } catch {
+        // Default to drafting on failure — better to over-draft than miss an important reply
+        return true;
+    }
+}
+
 export async function generateDraftReply(
     subject: string,
     body: string,
     sender: string,
+    userName: string,
     calendarContext?: string
 ) {
-    const emailContent = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
+    const senderFirstName = extractSenderFirstName(sender);
+    const emailContent = `From: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2500)}`;
 
     const calSection = calendarContext
-        ? `\n\n${calendarContext}\n\nHow to use the calendar context:
-- If the email is requesting a meeting or asking about availability, propose specific free time slots naturally (e.g. "I'm free Tuesday at 2 pm or Wednesday between 10 am – 12 pm").
-- If you are fully booked today, acknowledge it and suggest the next available day.
-- If the email has nothing to do with scheduling, ignore the calendar context entirely.`
+        ? `\n\nCalendar context (your availability):\n${calendarContext}\n\nIf the email is about scheduling or availability, propose specific free time slots naturally (e.g. "I'm free Tuesday at 2 pm or Wednesday between 10–12"). Ignore this section if scheduling is not relevant.`
         : "";
 
-    const prompt = `You are drafting a concise, professional email reply on behalf of the user.
+    const prompt = `You are drafting a professional email reply on behalf of ${userName}.
 
-Email to reply to:
+Email you are replying to:
 ${emailContent}${calSection}
 
+Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
+
+1. Greeting — "Hi ${senderFirstName}," (use "Dear ${senderFirstName}," if the email is very formal)
+2. Blank line
+3. Opening sentence — one concise sentence acknowledging what they wrote about (no generic openers like "I hope this email finds you well")
+4. Blank line
+5. Main reply — 2–3 sentences directly addressing their question, request, or message. Be specific — reference actual details from their email. Do not be vague or generic.
+6. Blank line
+7. Closing sentence — one natural sentence (e.g. "Let me know if you have any questions." or "Looking forward to hearing from you.")
+8. Blank line
+9. Sign-off — "Best regards," on its own line, then "${userName}" on the next line
+
 Rules:
-- 2–4 sentences only. No fluff.
-- No subject line, greeting, sign-off, or headers — just the reply body.
-- If scheduling is involved, reference actual availability from the calendar context above.
-- Match the tone of the incoming email (formal stays formal, casual stays casual).`;
+- Use \\n\\n between every section
+- Match the tone of their email: formal stays formal, casual stays casual
+- Do NOT invent facts — only reference what is explicitly in their email
+- Do NOT include a subject line in the output
+- Return only the plain email body text, nothing else`;
 
     return callGroq(prompt);
 }
