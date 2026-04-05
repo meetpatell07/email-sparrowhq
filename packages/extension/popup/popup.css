@@ -1,0 +1,285 @@
+/* ── Reset & base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg:        #0a0a0a;
+    --surface:   #111111;
+    --border:    #1f1f1f;
+    --input-bg:  #1a1a1a;
+    --input-border: #2a2a2a;
+    --text:      #ffffff;
+    --muted:     #888888;
+    --accent:    #ffffff;
+    --radius-card: 8px;
+    --radius-ctrl: 6px;
+}
+
+html, body {
+    width: 380px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 0;
+}
+
+#app {
+    padding: 0 0 8px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #444;
+    transition: background 0.2s;
+}
+
+.status-dot.connected { background: #16a765; }
+
+/* ── States ─────────────────────────────────────────────────────────────────── */
+.state { padding: 16px; }
+.hidden { display: none !important; }
+
+/* ── Loading / spinner ──────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 8px auto 10px;
+}
+
+/* ── Unauthenticated ─────────────────────────────────────────────────────────── */
+.unauthenticated-msg {
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+/* ── User row ────────────────────────────────────────────────────────────────── */
+.user-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--border);
+}
+
+.user-email {
+    color: var(--muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Page row ────────────────────────────────────────────────────────────────── */
+.page-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.favicon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.page-title {
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────────── */
+.field {
+    margin-bottom: 12px;
+}
+
+label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+input[type="email"],
+textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-ctrl);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+}
+
+input[type="email"]:focus,
+textarea:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+input[type="email"]::placeholder,
+textarea::placeholder {
+    color: #444;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+.btn-primary {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius-ctrl);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-ctrl);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, color 0.15s;
+    margin-top: 8px;
+}
+
+.btn-secondary:hover {
+    border-color: #444;
+    color: var(--text);
+}
+
+/* ── Generating state ────────────────────────────────────────────────────────── */
+#state-generating {
+    text-align: center;
+    padding: 24px 16px;
+}
+
+/* ── Success state ───────────────────────────────────────────────────────────── */
+.success-icon {
+    font-size: 20px;
+    color: #16a765;
+    margin-bottom: 12px;
+}
+
+.subject-preview {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.body-preview {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    /* Clamp to ~3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.success-actions { margin-top: 4px; }
+
+.dashboard-link {
+    margin-top: 10px;
+    font-size: 11px;
+    text-align: center;
+}
+
+.dashboard-link a {
+    color: var(--muted);
+    text-decoration: underline;
+}
+
+.dashboard-link a:hover { color: var(--text); }
+
+/* ── Error state ─────────────────────────────────────────────────────────────── */
+.error-msg {
+    color: #fb4c2f;
+    margin-bottom: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* ── Muted text ──────────────────────────────────────────────────────────────── */
+.muted { color: var(--muted); font-size: 12px; text-align: center; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────────── */
+.footer {
+    text-align: center;
+    color: #333;
+    font-size: 11px;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EmailHQ</title>
+    <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+    <div id="app">
+        <!-- Header — always visible -->
+        <header class="header">
+            <span class="wordmark">EmailHQ</span>
+            <span class="status-dot" id="status-dot" title="Not connected"></span>
+        </header>
+
+        <!-- State: loading auth check -->
+        <div id="state-loading" class="state hidden">
+            <div class="spinner"></div>
+            <p class="muted">Checking session…</p>
+        </div>
+
+        <!-- State: not logged in -->
+        <div id="state-unauthenticated" class="state hidden">
+            <p class="unauthenticated-msg">Sign in to EmailHQ to use this extension.</p>
+            <button class="btn-primary" id="btn-open-app">Open EmailHQ</button>
+        </div>
+
+        <!-- State: ready (logged in) -->
+        <div id="state-ready" class="state hidden">
+            <div class="user-row" id="user-row">
+                <img class="avatar" id="user-avatar" src="" alt="" />
+                <span class="user-email" id="user-email"></span>
+            </div>
+            <div class="page-row" id="page-row">
+                <img class="favicon" id="page-favicon" src="" alt="" />
+                <span class="page-title" id="page-title"></span>
+            </div>
+            <form id="draft-form">
+                <div class="field">
+                    <label for="recipient">Recipient</label>
+                    <input
+                        type="email"
+                        id="recipient"
+                        name="recipient"
+                        placeholder="hiring@acme.com"
+                        required
+                        autocomplete="off"
+                    />
+                </div>
+                <div class="field">
+                    <label for="intent">What's this email about?</label>
+                    <textarea
+                        id="intent"
+                        name="intent"
+                        rows="3"
+                        placeholder="e.g. follow up on this job posting, ask about pricing…"
+                        required
+                    ></textarea>
+                </div>
+                <button type="submit" class="btn-primary" id="btn-draft">Draft Email</button>
+            </form>
+        </div>
+
+        <!-- State: generating -->
+        <div id="state-generating" class="state hidden">
+            <div class="spinner"></div>
+            <p class="muted">Drafting your email…</p>
+        </div>
+
+        <!-- State: success -->
+        <div id="state-success" class="state hidden">
+            <div class="success-icon">✓</div>
+            <p class="subject-preview" id="subject-preview"></p>
+            <p class="body-preview" id="body-preview"></p>
+            <div class="success-actions">
+                <a class="btn-primary" id="btn-gmail" href="https://mail.google.com/mail/#drafts" target="_blank" rel="noopener">
+                    Open in Gmail Drafts
+                </a>
+                <button class="btn-secondary" id="btn-again">Draft Another</button>
+            </div>
+            <p class="muted dashboard-link">
+                Also visible in
+                <a href="https://email.sparrowhq.co/dashboard/drafts" target="_blank" rel="noopener">EmailHQ Drafts</a>
+            </p>
+        </div>
+
+        <!-- State: error -->
+        <div id="state-error" class="state hidden">
+            <p class="error-msg" id="error-msg">Something went wrong.</p>
+            <button class="btn-primary" id="btn-retry">Try Again</button>
+        </div>
+    </div>
+
+    <footer class="footer">Powered by EmailHQ</footer>
+
+    <script src="popup.js"></script>
+</body>
+</html>
