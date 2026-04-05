@@ -4,10 +4,11 @@ An AI-powered email management platform that connects to Gmail, Google Calendar,
 
 ## Features
 
+- **Privacy-First Architecture** — No email content (subject, body, sender, snippet) is ever written to the database. All display data is fetched live from Gmail API and cached in Redis. Only operational metadata (`gmailId`, `threadId`, `receivedAt`, `categories`) is persisted.
 - **Real-time Ingestion Pipeline** — Gmail Pub/Sub push → QStash queue → per-email processing with automatic retries. No polling required.
-- **Smart Classification** — Classifies every email into a single category: `Important`, `Follow Up`, `Scheduled`, `Finance`, `Personal`, `Notification`, or `Marketing` using a local Ollama/LLM model.
-- **Gmail Label Sync** — Creates and applies colour-coded labels directly in Gmail automatically on every ingest, keeping your inbox organised without visiting the dashboard.
-- **Auto-Draft Replies** — Generates AI reply drafts for `Important`, `Follow Up`, and `Scheduled` emails, saved to Gmail Drafts with a pending-approval workflow.
+- **Smart Classification** — Classifies every email into a single category: `Important`, `Follow Up`, `Planned`, `Finance`, `Personal`, `Notification`, or `Marketing` using a local Ollama/LLM model.
+- **Gmail Label Sync** — Creates and applies colour-coded labels directly in Gmail automatically on every ingest. Labels are namespaced to avoid conflicts with Gmail system labels (`Priority` instead of `Important`, `Planned` instead of `Scheduled`).
+- **Auto-Draft Replies** — Generates AI reply drafts for `Important`, `Follow Up`, and `Planned` emails, saved directly to Gmail Drafts with a pending-approval workflow. Draft content is never stored in the database.
 - **Invoice Extraction** — Detects finance emails and extracts vendor name, amount, currency, and due date into a structured invoices table.
 - **Attachment Vault** — Email attachments uploaded to Cloudflare R2, browseable in the Vault with download, save-to-Drive, and draft-reply actions.
 - **AI Chat Assistant** — Natural language interface: draft replies, check calendar, create events, list emails — powered by the same local LLM.
@@ -114,29 +115,68 @@ Gmail receives email
        └─ Publish to QStash → POST /api/ingest/process-history
             │  (retries up to 3× on failure)
             │
-            └─ processSingleEmail(userId, messageId)
+            └─ Per-message processing
+                 ├─ Label pre-check (format=minimal) — skip DRAFT/SENT/SPAM/TRASH
+                 ├─ Redis dedup check (processed:{messageId})
                  ├─ Fetch full Gmail message
-                 ├─ Decode body (handles multipart nesting)
-                 ├─ Insert email record (skip if duplicate)
+                 ├─ Guard: skip if DRAFT or SENT label
+                 ├─ Guard: skip if sender is self
+                 ├─ Decode body (handles multipart nesting) — in memory only
+                 ├─ Insert email record (gmailId, threadId, receivedAt only)
                  ├─ Upload attachments → Cloudflare R2
-                 ├─ Classify with AI → update category in DB
+                 ├─ Classify with AI → update categories in DB
                  ├─ Apply Gmail label (awaited — not fire-and-forget)
                  ├─ If finance → extract invoice data → store
-                 └─ If important/follow_up/scheduled → generate draft
-                      └─ Save to Gmail Drafts + drafts table
+                 ├─ If important/follow_up/planned → check thread dedup → generate draft
+                 │    └─ Save draft to Gmail Drafts + drafts table (no content stored)
+                 └─ Invalidate Redis email list cache
 ```
+
+## Privacy-First Data Model
+
+Email content is never written to the database. The ingestion pipeline processes content entirely in memory (for AI classification, label application, and draft generation), then discards it. All display data is fetched live from Gmail API.
+
+### What is stored in the database
+
+| Table         | Stored fields                                                        |
+|---------------|----------------------------------------------------------------------|
+| `emails`      | `gmailId`, `threadId`, `userId`, `receivedAt`, `categories`, `isProcessed` |
+| `drafts`      | `gmailDraftId`, `emailId`, `status` (content lives in Gmail Drafts) |
+| `attachments` | `r2Key`, `filename`, `contentType`, `size`, `emailId`               |
+| `invoices`    | `vendorName`, `amount`, `currency`, `dueDate`, `extractedData`      |
+
+### What is never stored
+
+- Email subject, body, snippet
+- Sender and recipient addresses
+- Draft reply content
+- Raw attachment data (files go to R2, not the DB)
+
+### Email list caching
+
+The latest 20 emails are cached in Redis per user (`emails:{userId}`, 5-minute TTL). The cache stores the full enriched response — Gmail content merged with DB categories — so the UI remains fast. The cache is invalidated immediately when a new email is processed by the ingestion pipeline.
 
 ## Email Categories
 
-| Category       | Colour  | Triggers Draft |
-|----------------|---------|----------------|
-| `important`    | Red     | ✅              |
-| `follow_up`    | Blue    | ✅              |
-| `scheduled`    | Green   | ✅              |
-| `finance`      | Dark Green | ❌ (invoice extraction instead) |
-| `personal`     | Purple  | ❌              |
-| `notification` | Orange  | ❌              |
-| `marketing`    | Dark Red| ❌              |
+| Category       | Gmail Label   | Colour     | Triggers Draft |
+|----------------|---------------|------------|----------------|
+| `important`    | Priority      | Red        | ✅              |
+| `follow_up`    | Follow Up     | Blue       | ✅              |
+| `scheduled`    | Planned       | Green      | ✅              |
+| `finance`      | Finance       | Dark Green | ❌ (invoice extraction instead) |
+| `personal`     | Personal      | Purple     | ❌              |
+| `notification` | Notification  | Orange     | ❌              |
+| `marketing`    | Marketing     | Dark Red   | ❌              |
+
+> **Note:** Gmail label names differ from internal category keys to avoid conflicts with Gmail's built-in system labels (`IMPORTANT`, `SCHEDULED`).
+
+## Draft Loop Prevention
+
+The pipeline has three layers of defence against infinite draft creation loops:
+
+1. **Label pre-check** (`process-history/route.ts`) — fetches message metadata with `format=minimal` before any processing; skips messages with `DRAFT`, `SENT`, `SPAM`, or `TRASH` labels immediately.
+2. **Label guard** (`processSingleEmail`) — skips messages whose `labelIds` contain `DRAFT` or `SENT` after full fetch.
+3. **Thread deduplication** (`processSingleEmail`) — queries the `drafts` table before creating a new draft; skips if the thread already has one.
 
 ## Project Structure
 
@@ -145,10 +185,10 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── auth/                  # Better Auth endpoints
-│   │   ├── emails/                # Fetch & get single email
+│   │   ├── emails/                # Email list (Redis-cached, live Gmail fetch)
 │   │   ├── calendar/              # Calendar events + availability
 │   │   ├── chat/                  # AI chat (rate-limited)
-│   │   ├── drafts/                # Draft CRUD
+│   │   ├── drafts/                # Draft status + live content from Gmail Drafts API
 │   │   ├── drive/                 # Drive file browser
 │   │   ├── vault/                 # Attachment vault + R2 actions
 │   │   ├── settings/connections/  # Connected account info
@@ -180,9 +220,10 @@ src/
     ├── ai.ts                      # classify, generateDraft, extractInvoice
     ├── auth.ts                    # Better Auth + encrypted token adapter
     ├── calendar.ts                # Google Calendar client
-    ├── gmail.ts                   # Gmail client + label management
+    ├── gmail.ts                   # Gmail client, label management, live fetch helpers
     ├── ingest.ts                  # listNewEmailIds + processSingleEmail
     ├── encryption.ts              # AES-256-CBC token encryption
+    ├── redis.ts                   # Upstash Redis client
     ├── s3.ts                      # Cloudflare R2 client
     ├── qstash.ts                  # QStash client + receiver
     └── db/                        # Drizzle schema & connection
@@ -195,6 +236,7 @@ src/
 - QStash webhook signatures verified on every ingest callback
 - Gmail Pub/Sub webhook validated via shared secret query parameter
 - Connected account disconnect clears both access and refresh tokens from DB
+- **No email content is ever persisted** — subject, body, sender, snippet, and draft text exist only in memory during processing and in Gmail itself
 - Raw email body content is never persisted beyond the processing request
 
 ## License
