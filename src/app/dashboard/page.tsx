@@ -2,8 +2,8 @@
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Loading02Icon, Calendar01Icon, ArrowUpRight01Icon, Menu01Icon, GridViewIcon } from "@hugeicons/core-free-icons";
-import { useEffect, useState } from "react";
+import { Loading02Icon, ArrowUpRight01Icon, Menu01Icon, GridViewIcon } from "@hugeicons/core-free-icons";
+import { useEffect, useState, useMemo } from "react";
 import { DriveFilesTab } from "@/components/DriveFilesTab";
 import { format, isToday, isTomorrow, differenceInMinutes, addDays, startOfDay } from "date-fns";
 import useSWR from "swr";
@@ -88,11 +88,10 @@ function CalendarTab() {
                 return (
                     <div
                         key={key}
-                        className={`relative flex gap-4 bg-white border rounded-xl px-4 py-3.5 transition-colors group ${
-                            isToday_
+                        className={`relative flex gap-4 bg-white border rounded-xl px-4 py-3.5 transition-colors group ${isToday_
                                 ? "border-[#1C1917]"
                                 : "border-[#E7E5E4] hover:border-[#D6D3D1]"
-                        }`}
+                            }`}
                     >
                         {/* Left: date column */}
                         <div className="shrink-0 w-12 flex flex-col items-center justify-start pt-0.5">
@@ -110,15 +109,15 @@ function CalendarTab() {
 
                         {/* Right: events list + arrow */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <a
-                            href={`https://calendar.google.com/calendar/r/day/${format(day, "yyyy/M/d")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Open in Google Calendar"
-                        >
-                            <HugeiconsIcon icon={ArrowUpRight01Icon} size={13} className="text-[#A8A29E] hover:text-[#1C1917]" />
-                        </a>
+                            <a
+                                href={`https://calendar.google.com/calendar/r/day/${format(day, "yyyy/M/d")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Open in Google Calendar"
+                            >
+                                <HugeiconsIcon icon={ArrowUpRight01Icon} size={13} className="text-[#A8A29E] hover:text-[#1C1917]" />
+                            </a>
                             {dayEvents.length === 0 ? (
                                 <p className="text-[12px] text-[#C7C4C1]">No events</p>
                             ) : (
@@ -149,8 +148,8 @@ function CalendarTab() {
                                                                 className="shrink-0"
                                                             >
                                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                                    <path d="M15 10.5V7l4.5 4.5L15 16v-3.5H9v-2h6z" fill="#00832D"/>
-                                                                    <rect x="2" y="7" width="11" height="10" rx="1.5" fill="#0066DA"/>
+                                                                    <path d="M15 10.5V7l4.5 4.5L15 16v-3.5H9v-2h6z" fill="#00832D" />
+                                                                    <rect x="2" y="7" width="11" height="10" rx="1.5" fill="#0066DA" />
                                                                 </svg>
                                                             </a>
                                                         )}
@@ -220,11 +219,10 @@ export default function DashboardPage() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors whitespace-nowrap ${
-                                        isActive
+                                    className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors whitespace-nowrap ${isActive
                                             ? "text-[#1C1917] pb-3 -mb-3 border-b-2 border-[#1C1917]"
                                             : "text-[#78716C] hover:text-[#1C1917]"
-                                    }`}
+                                        }`}
                                 >
                                     {icons[tab] && (
                                         <img src={icons[tab]} alt={tab} className="w-4 h-4 object-contain" />
@@ -295,13 +293,13 @@ export default function DashboardPage() {
                                             const senderInitial = senderName.charAt(0).toUpperCase();
                                             const category = email.categories?.[0];
                                             const categoryStyles: Record<string, { bg: string; text: string; label: string }> = {
-                                                important:    { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]",  label: "Important" },
-                                                follow_up:    { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]",  label: "Follow Up" },
-                                                scheduled:    { bg: "bg-[#ECFDF5]", text: "text-[#059669]",  label: "Scheduled" },
-                                                finance:      { bg: "bg-[#F0FDF4]", text: "text-[#16A34A]",  label: "Finance" },
-                                                personal:     { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]",  label: "Personal" },
-                                                notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]",  label: "Notification" },
-                                                marketing:    { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]",  label: "Marketing" },
+                                                important: { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]", label: "Important" },
+                                                follow_up: { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]", label: "Follow Up" },
+                                                scheduled: { bg: "bg-[#ECFDF5]", text: "text-[#059669]", label: "Scheduled" },
+                                                finance: { bg: "bg-[#F0FDF4]", text: "text-[#16A34A]", label: "Finance" },
+                                                personal: { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]", label: "Personal" },
+                                                notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]", label: "Notification" },
+                                                marketing: { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]", label: "Marketing" },
                                             };
                                             const catStyle = category ? (categoryStyles[category] ?? null) : null;
 
