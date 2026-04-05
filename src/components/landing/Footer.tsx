@@ -10,12 +10,12 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: "Features", href: "#features" },
     { label: "How it works", href: "#how-it-works" },
     { label: "Changelog", href: "#" },
-    { label: "Roadmap", href: "#" },
+    { label: "Roadmap", href: "/roadmap" },
   ],
   Resources: [
-    { label: "Documentation", href: "#" },
+    { label: "About", href: "/about" },
     { label: "GitHub", href: "https://github.com/meetpatell07/email-sparrowhq" },
-    { label: "Status", href: "#" },
+    { label: "Documentation", href: "#" },
     { label: "Support", href: "#" },
   ],
   Legal: [
@@ -66,9 +66,13 @@ export function Footer() {
             © {new Date().getFullYear()} EmailHQ. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            {[GithubIcon, NewTwitterIcon, LinkedinIcon].map((Icon, i) => (
-              <a key={i} href="#" className="transition-opacity hover:opacity-100" style={{ color: "var(--lp-text-muted)", opacity: 0.6 }}>
-                <HugeiconsIcon icon={Icon} size={18} />
+            {[
+              { icon: GithubIcon, href: "https://github.com/meetpatell07/email-sparrowhq" },
+              { icon: NewTwitterIcon, href: "https://x.com/meettptll" },
+              { icon: LinkedinIcon, href: "https://www.linkedin.com/in/meet-patel-04aa59230/" },
+            ].map(({ icon, href }) => (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100" style={{ color: "var(--lp-text-muted)", opacity: 0.6 }}>
+                <HugeiconsIcon icon={icon} size={18} />
               </a>
             ))}
           </div>
