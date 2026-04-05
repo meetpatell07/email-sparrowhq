@@ -237,7 +237,7 @@ export async function processSingleEmail(
             await db.insert(drafts).values({
                 emailId: emailRecord.id,
                 gmailDraftId,
-                content: draftContent,
+                // content not stored — draft body lives exclusively in Gmail Drafts
                 status: 'pending_approval',
             });
             console.log(`[ingest] ✓ Draft saved to DB`);

@@ -502,7 +502,7 @@ export async function applyGmailLabel(
 export async function fetchEmailMetadataById(
     userId: string,
     gmailId: string
-): Promise<{ subject: string; sender: string }> {
+): Promise<{ subject: string; sender: string; snippet: string }> {
     const gmail = await getGmailClient(userId);
     const res = await gmail.users.messages.get({
         userId: 'me',
@@ -514,6 +514,8 @@ export async function fetchEmailMetadataById(
     return {
         subject: hdrs.find((h) => h.name === 'Subject')?.value ?? '(No Subject)',
         sender:  hdrs.find((h) => h.name === 'From')?.value ?? '',
+        // snippet is returned by format=metadata at no extra cost
+        snippet: res.data.snippet ?? '',
     };
 }
 
