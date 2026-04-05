@@ -19,10 +19,10 @@ export function Hero() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tl.fromTo(badgeRef.current,   { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 })
+      tl.fromTo(badgeRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 })
         .fromTo(headlineRef.current, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0 }, "-=0.5")
-        .fromTo(subRef.current,      { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, "-=0.7")
-        .fromTo(ctaRef.current,      { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, "-=0.6");
+        .fromTo(subRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, "-=0.7")
+        .fromTo(ctaRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, "-=0.6");
     }, containerRef);
     return () => ctx.revert();
   }, []);
@@ -35,10 +35,8 @@ export function Hero() {
       style={{ background: "var(--lp-bg-primary)" }}
     >
 
-{/* 3D canvas — desktop only */}
-      <div className="hidden lg:block absolute inset-0 pointer-events-none">
-        <HeroScene />
-      </div>
+      {/* 3D canvas — desktop only */}
+
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-screen-xl mx-auto">
