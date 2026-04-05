@@ -9,7 +9,6 @@ import { format, isToday, isTomorrow, differenceInMinutes, addDays, startOfDay }
 import useSWR from "swr";
 import Link from "next/link";
 
-
 // ─── Calendar helpers ──────────────────────────────────────────────────────
 
 interface CalendarAttendee {
