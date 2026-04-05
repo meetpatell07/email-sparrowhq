@@ -2,11 +2,12 @@
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Loading02Icon, Calendar01Icon } from "@hugeicons/core-free-icons";
+import { Loading02Icon, Calendar01Icon, ArrowUpRight01Icon, Menu01Icon, GridViewIcon } from "@hugeicons/core-free-icons";
 import { useEffect, useState } from "react";
 import { DriveFilesTab } from "@/components/DriveFilesTab";
 import { format, isToday, isTomorrow, isYesterday, differenceInMinutes } from "date-fns";
 import useSWR from "swr";
+import Link from "next/link";
 
 // ─── Calendar helpers ──────────────────────────────────────────────────────
 
@@ -244,6 +245,7 @@ export default function DashboardPage() {
     const [emails, setEmails] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"All Sources" | "Gmail" | "Drive" | "Calendar">("All Sources");
+    const [driveViewMode, setDriveViewMode] = useState<"list" | "grid">("grid");
 
     useEffect(() => {
         fetch("/api/emails?limit=20")
@@ -292,50 +294,119 @@ export default function DashboardPage() {
                     <div>
                         {activeTab === "Drive" ? (
                             <div>
-                                <h3 className="text-[11px] font-semibold text-[#A8A29E] tracking-widest uppercase mb-4">DRIVE FILES</h3>
-                                <DriveFilesTab />
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-[11px] font-semibold text-[#A8A29E] tracking-widest uppercase">DRIVE FILES</h3>
+                                    <div className="flex items-center gap-0.5 p-1 bg-[#F5F5F4] rounded-lg">
+                                        <button
+                                            onClick={() => setDriveViewMode("list")}
+                                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${driveViewMode === "list" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
+                                            aria-label="List view"
+                                        >
+                                            <HugeiconsIcon icon={Menu01Icon} size={15} />
+                                        </button>
+                                        <button
+                                            onClick={() => setDriveViewMode("grid")}
+                                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${driveViewMode === "grid" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
+                                            aria-label="Grid view"
+                                        >
+                                            <HugeiconsIcon icon={GridViewIcon} size={15} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <DriveFilesTab viewMode={driveViewMode} />
                             </div>
                         ) : activeTab === "Calendar" ? (
                             <CalendarTab />
                         ) : (
                             <div>
-                                <h3 className="text-[11px] font-semibold text-[#A8A29E] tracking-widest uppercase mb-4">TODAY</h3>
+                                {/* Section header with Gmail redirect */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-[11px] font-semibold text-[#A8A29E] tracking-widest uppercase">Recent Emails</h3>
+                                    <a
+                                        href="https://mail.google.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F5F5F4] transition-colors"
+                                        title="Open Gmail"
+                                    >
+                                        <HugeiconsIcon icon={ArrowUpRight01Icon} size={15} className="text-[#A8A29E] hover:text-[#57534E]" />
+                                    </a>
+                                </div>
+
                                 <div className="space-y-2">
                                     {loading ? (
                                         <p className="text-[13px] text-[#A8A29E] flex items-center gap-2">
-                                            <HugeiconsIcon icon={Loading02Icon} size={14} className="animate-spin" /> Fetching timeline...
+                                            <HugeiconsIcon icon={Loading02Icon} size={14} className="animate-spin" /> Fetching emails...
                                         </p>
                                     ) : emails.length > 0 ? (
                                         emails.map((email) => {
                                             const timeStr = email.receivedAt
                                                 ? new Date(email.receivedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
                                                 : "";
-                                            const senderInitial = (email.sender || "U").charAt(0).toUpperCase();
+                                            const senderName = email.sender?.match(/^(.+?)\s*</)?.[1]?.replace(/^"|"$/g, "").trim()
+                                                || email.sender?.split("@")[0]
+                                                || "Unknown";
+                                            const senderEmail = email.sender?.match(/<(.+?)>/)?.[1] || email.sender || "";
+                                            const senderInitial = senderName.charAt(0).toUpperCase();
+                                            const category = email.categories?.[0];
+                                            const categoryStyles: Record<string, { bg: string; text: string; label: string }> = {
+                                                important:    { bg: "bg-[#FEF2F2]", text: "text-[#DC2626]",  label: "Important" },
+                                                follow_up:    { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]",  label: "Follow Up" },
+                                                scheduled:    { bg: "bg-[#ECFDF5]", text: "text-[#059669]",  label: "Scheduled" },
+                                                finance:      { bg: "bg-[#F0FDF4]", text: "text-[#16A34A]",  label: "Finance" },
+                                                personal:     { bg: "bg-[#F5F3FF]", text: "text-[#7C3AED]",  label: "Personal" },
+                                                notification: { bg: "bg-[#FFFBEB]", text: "text-[#D97706]",  label: "Notification" },
+                                                marketing:    { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]",  label: "Marketing" },
+                                            };
+                                            const catStyle = category ? (categoryStyles[category] ?? null) : null;
+
                                             return (
-                                                <div key={email.id} className="bg-white border border-[#E7E5E4] rounded-lg p-3 hover:border-[#D6D3D1] transition-colors flex gap-3 group items-center">
-                                                    <div className="w-8 h-8 rounded-full bg-[#F5F5F4] text-[#78716C] font-semibold text-[13px] flex items-center justify-center shrink-0">
+                                                <div key={email.id} className="bg-white border border-[#E7E5E4] rounded-lg p-3 hover:border-[#D6D3D1] transition-colors flex gap-3">
+                                                    {/* Sender initial avatar */}
+                                                    <div className="w-8 h-8 rounded-full bg-[#F5F5F4] text-[#78716C] font-semibold text-[13px] flex items-center justify-center shrink-0 mt-0.5">
                                                         {senderInitial}
                                                     </div>
+
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                                                            <span className="text-[13px] font-semibold text-[#1C1917] truncate">
-                                                                {email.senderName || email.sender?.split("<")[0]?.trim() || "Unknown"}
-                                                            </span>
-                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                <span className="text-[12px] text-[#A8A29E] whitespace-nowrap">{timeStr}</span>
-                                                                <img src="https://cdn.brandfetch.io/gmail.com/icon/theme/dark/fallback/transparent" alt="Gmail" className="w-4 h-4 object-contain opacity-50 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                                                        {/* Subject + category badge */}
+                                                        <div className="flex items-start justify-between gap-2 mb-0.5">
+                                                            <p className="text-[13px] font-semibold text-[#1C1917] leading-snug line-clamp-1">
+                                                                &ldquo;{email.subject || "(No Subject)"}&rdquo;
+                                                            </p>
+                                                            {catStyle && (
+                                                                <span className={`shrink-0 inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-[4px] ${catStyle.bg} ${catStyle.text}`}>
+                                                                    {catStyle.label}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Sender name + email */}
+                                                        <p className="text-[12px] text-[#57534E] mb-1.5">
+                                                            <span className="font-medium">{senderName}</span>
+                                                            {senderEmail && senderEmail !== senderName && (
+                                                                <span className="text-[#A8A29E] ml-1">&lt;{senderEmail}&gt;</span>
+                                                            )}
+                                                        </p>
+
+                                                        {/* Footer: Read more + time + Gmail icon */}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <Link
+                                                                href={`/dashboard/email/${email.gmailId}`}
+                                                                className="text-[12px] font-medium text-[#4F46E5] hover:text-[#4338CA] transition-colors"
+                                                            >
+                                                                Read more
+                                                            </Link>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                <span className="text-[12px] text-[#A8A29E]">{timeStr}</span>
+                                                                <img src="https://cdn.brandfetch.io/gmail.com/icon/theme/dark/fallback/transparent" alt="Gmail" className="w-4 h-4 object-contain opacity-60" />
                                                             </div>
                                                         </div>
-                                                        <p className="text-[13px] font-medium text-[#1C1917] truncate">{email.subject}</p>
-                                                        <p className="text-[12px] text-[#78716C] truncate mt-0.5">
-                                                            {email.snippet?.replace(/&#39;/g, "'").replace(/&quot;/g, '"')}
-                                                        </p>
                                                     </div>
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <p className="text-[13px] text-[#A8A29E]">No activity today.</p>
+                                        <p className="text-[13px] text-[#A8A29E]">No emails found.</p>
                                     )}
                                 </div>
                             </div>

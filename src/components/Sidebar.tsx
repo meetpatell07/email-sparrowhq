@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
     Home01Icon,
-    Mail01Icon,
     Tag01Icon,
     Archive01Icon,
     CheckmarkSquare01Icon,
@@ -21,7 +20,6 @@ import { SparrowMark } from "@/components/landing/Logo";
 
 const mainNav = [
     { name: "Overview",    icon: Home01Icon,           href: "/dashboard" },
-    { name: "Emails",      icon: Mail01Icon,            href: "/dashboard/emails" },
     { name: "Categories",  icon: Tag01Icon,             href: "/dashboard/categories" },
     { name: "Vault",       icon: Archive01Icon,         href: "/dashboard/vault" },
     { name: "Drafts",      icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },

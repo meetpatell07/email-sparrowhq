@@ -14,6 +14,8 @@ import {
     LinkSquare01Icon,
     SentIcon,
     Loading03Icon,
+    Menu01Icon,
+    GridViewIcon,
 } from "@hugeicons/core-free-icons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -129,80 +131,80 @@ function FilePanel({
         <>
             {/* Mobile backdrop */}
             <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={onClose} />
-        <motion.div
-            initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%", opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-            className={[
-                "fixed right-0 top-0 h-full w-[min(320px,100vw)] z-50 md:z-auto",
-                "md:relative md:w-[320px] md:h-auto",
-                "shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto",
-            ].join(" ")}
-        >
-            {/* Panel header */}
-            <div className="flex items-start justify-between p-5 border-b border-[#E7E5E4]">
-                <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
-                    <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#F5F5F4] shrink-0">
-                        <FileTypeIcon category={category} size={20} />
+            <motion.div
+                initial={{ x: "100%", opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: "100%", opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+                className={[
+                    "fixed right-0 top-0 h-full w-[min(320px,100vw)] z-50 md:z-auto",
+                    "md:relative md:w-[320px] md:h-auto",
+                    "shrink-0 border-l border-[#E7E5E4] bg-white flex flex-col overflow-y-auto",
+                ].join(" ")}
+            >
+                {/* Panel header */}
+                <div className="flex items-start justify-between p-5 border-b border-[#E7E5E4]">
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
+                        <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#F5F5F4] shrink-0">
+                            <FileTypeIcon category={category} size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[14px] font-semibold text-[#1C1917] leading-snug break-words">
+                                {file.name}
+                            </p>
+                            <span className="text-[12px] font-medium" style={{ color }}>
+                                {label}
+                            </span>
+                        </div>
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-[14px] font-semibold text-[#1C1917] leading-snug break-words">
-                            {file.name}
+                    <button
+                        onClick={onClose}
+                        className="shrink-0 text-[#A8A29E] hover:text-[#57534E] transition-colors"
+                        aria-label="Close panel"
+                    >
+                        <HugeiconsIcon icon={Cancel01Icon} size={18} />
+                    </button>
+                </div>
+
+                {/* Metadata */}
+                <div className="px-5 py-4 border-b border-[#E7E5E4] grid grid-cols-2 gap-4">
+                    <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mb-1">
+                            Modified
                         </p>
-                        <span className="text-[12px] font-medium" style={{ color }}>
-                            {label}
-                        </span>
+                        <p className="text-[14px] text-[#1C1917]">
+                            {formatDate(file.modifiedTime)}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mb-1">
+                            Size
+                        </p>
+                        <p className="text-[14px] text-[#1C1917]">{displaySize}</p>
                     </div>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="shrink-0 text-[#A8A29E] hover:text-[#57534E] transition-colors"
-                    aria-label="Close panel"
-                >
-                    <HugeiconsIcon icon={Cancel01Icon} size={18} />
-                </button>
-            </div>
 
-            {/* Metadata */}
-            <div className="px-5 py-4 border-b border-[#E7E5E4] grid grid-cols-2 gap-4">
-                <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mb-1">
-                        Modified
-                    </p>
-                    <p className="text-[14px] text-[#1C1917]">
-                        {formatDate(file.modifiedTime)}
-                    </p>
+                {/* Actions */}
+                <div className="p-5 space-y-2.5">
+                    <a
+                        href={file.webViewLink || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg border border-[#E7E5E4] text-[14px] font-medium text-[#1C1917] hover:bg-[#F5F5F4] transition-colors"
+                    >
+                        <HugeiconsIcon icon={LinkSquare01Icon} size={17} className="text-[#57534E] shrink-0" />
+                        Open in Google Drive
+                    </a>
+
+                    <button
+                        onClick={handleSendAsEmail}
+                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg bg-[#1C1917] text-[14px] font-medium text-white hover:bg-[#292524] transition-colors"
+                    >
+                        <HugeiconsIcon icon={SentIcon} size={17} className="shrink-0" />
+                        Send as email
+                    </button>
                 </div>
-                <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mb-1">
-                        Size
-                    </p>
-                    <p className="text-[14px] text-[#1C1917]">{displaySize}</p>
-                </div>
-            </div>
-
-            {/* Actions */}
-            <div className="p-5 space-y-2.5">
-                <a
-                    href={file.webViewLink || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg border border-[#E7E5E4] text-[14px] font-medium text-[#1C1917] hover:bg-[#F5F5F4] transition-colors"
-                >
-                    <HugeiconsIcon icon={LinkSquare01Icon} size={17} className="text-[#57534E] shrink-0" />
-                    Open in Google Drive
-                </a>
-
-                <button
-                    onClick={handleSendAsEmail}
-                    className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg bg-[#1C1917] text-[14px] font-medium text-white hover:bg-[#292524] transition-colors"
-                >
-                    <HugeiconsIcon icon={SentIcon} size={17} className="shrink-0" />
-                    Send as email
-                </button>
-            </div>
-        </motion.div>
+            </motion.div>
         </>
     );
 }
@@ -214,6 +216,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 export default function DrivePage() {
     const [activeFilter, setActiveFilter] = useState<FileCategory | "all">("all");
     const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
+    const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
     const { data, error, isLoading } = useSWR<{ files: DriveFile[] }>("/api/drive", fetcher);
     const files = data?.files ?? [];
@@ -245,130 +248,164 @@ export default function DrivePage() {
                     <p className="text-[13px] text-[#78716C]">Your files, docs, sheets, and more</p>
                 </div>
 
-                {/* Filter tabs */}
-                <div className="px-4 pb-4 shrink-0 flex items-center gap-2 flex-wrap">
-                    {FILTERS.map(({ key, label }) => {
-                        const count = counts[key] ?? 0;
-                        const isActive = activeFilter === key;
-                        return (
-                            <button
-                                key={key}
-                                onClick={() => { setActiveFilter(key); setSelectedFile(null); }}
-                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${isActive
-                                    ? "bg-[#1C1917] text-white"
-                                    : "bg-[#F5F5F4] text-[#57534E] hover:bg-[#E7E5E4]"
-                                    }`}
-                            >
-                                {label}
-                                <span className={`text-[12px] tabular-nums ${isActive ? "text-white/60" : "text-[#A8A29E]"}`}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Content: table + optional panel side-by-side */}
-                <div className="flex flex-1 overflow-hidden">
-                    {/* File list */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Table header */}
-                        <div className="px-4 md:px-6 py-2 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Name</span>
-                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Type</span>
-                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Modified</span>
-                            <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Size</span>
-                            <span />
-                        </div>
-
-                        {/* Rows */}
-                        <div className="flex-1 overflow-y-auto">
-                            {isLoading ? (
-                                <div className="py-20 flex flex-col items-center gap-3">
-                                    <HugeiconsIcon
-                                        icon={Loading03Icon}
-                                        size={22}
-                                        className="animate-spin text-[#A8A29E]"
-                                    />
-                                    <p className="text-[13px] text-[#78716C]">Loading Drive files…</p>
-                                </div>
-                            ) : error ? (
-                                <div className="py-20 text-center">
-                                    <p className="text-[14px] text-[#DC2626] font-medium">
-                                        Failed to load Drive files.
-                                    </p>
-                                    <p className="text-[13px] text-[#78716C] mt-1">
-                                        Make sure you have granted Drive access.
-                                    </p>
-                                </div>
-                            ) : filteredFiles.length === 0 ? (
-                                <div className="py-20 flex flex-col items-center gap-3">
-                                    <HugeiconsIcon
-                                        icon={GoogleDriveIcon}
-                                        size={28}
-                                        className="text-[#D4D0CE]"
-                                    />
-                                    <p className="text-[13px] text-[#78716C]">No files found.</p>
-                                </div>
-                            ) : (
-                                filteredFiles.map((file) => {
-                                    const category = getCategory(file.mimeType);
-                                    const isSelected = selectedFile?.id === file.id;
-                                    const sizeBytes = file.size || file.quotaBytesUsed;
-
-                                    return (
-                                        <div
-                                            key={file.id}
-                                            onClick={() => handleRowClick(file)}
-                                            className={`px-4 md:px-6 py-3.5 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${isSelected
-                                                ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[14px] md:pl-[22px]"
-                                                : "hover:bg-[#FAFAF9]"
-                                                }`}
-                                        >
-                                            {/* Name + icon */}
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-8 h-8 flex items-center justify-center rounded-md bg-[#F5F5F4] shrink-0">
-                                                    <FileTypeIcon category={category} />
-                                                </div>
-                                                <span className="text-[14px] text-[#1C1917] font-medium truncate">
-                                                    {file.name}
-                                                </span>
-                                            </div>
-
-                                            {/* Type — desktop only */}
-                                            <div className="hidden md:block">
-                                                <TypeBadge category={category} />
-                                            </div>
-
-                                            {/* Modified — desktop only */}
-                                            <span className="hidden md:block text-[13px] text-[#78716C]">
-                                                {formatDate(file.modifiedTime)}
-                                            </span>
-
-                                            {/* Size — desktop only */}
-                                            <span className="hidden md:block text-[13px] text-[#78716C]">
-                                                {formatSize(sizeBytes)}
-                                            </span>
-
-                                            {/* Arrow */}
-                                            <div className="flex justify-end">
-                                                <HugeiconsIcon
-                                                    icon={ArrowRight01Icon}
-                                                    size={15}
-                                                    className={`transition-colors ${isSelected
-                                                        ? "text-[#1C1917]"
-                                                        : "text-[#D4D0CE] group-hover:text-[#A8A29E]"
-                                                        }`}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
+                {/* Filter tabs + view toggle */}
+                <div className="px-4 pb-4 shrink-0 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap flex-1">
+                        {FILTERS.map(({ key, label }) => {
+                            const count = counts[key] ?? 0;
+                            const isActive = activeFilter === key;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => { setActiveFilter(key); setSelectedFile(null); }}
+                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${isActive
+                                        ? "bg-[#1C1917] text-white"
+                                        : "bg-[#F5F5F4] text-[#57534E] hover:bg-[#E7E5E4]"
+                                        }`}
+                                >
+                                    {label}
+                                    <span className={`text-[12px] tabular-nums ${isActive ? "text-white/60" : "text-[#A8A29E]"}`}>
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
 
-                    {/* Slide-in detail panel */}
+                    {/* List / Grid toggle */}
+                    <div className="flex items-center gap-0.5 p-1 bg-[#F5F5F4] rounded-lg shrink-0">
+                        <button
+                            onClick={() => setViewMode("list")}
+                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${viewMode === "list" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
+                            aria-label="List view"
+                        >
+                            <HugeiconsIcon icon={Menu01Icon} size={15} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode("grid")}
+                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${viewMode === "grid" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
+                            aria-label="Grid view"
+                        >
+                            <HugeiconsIcon icon={GridViewIcon} size={15} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content: file list/grid + optional detail panel */}
+                <div className="flex flex-1 overflow-hidden">
+                    <div className="flex-1 flex flex-col overflow-hidden">
+
+                        {/* ── Shared empty / loading / error states ── */}
+                        {isLoading ? (
+                            <div className="py-20 flex flex-col items-center gap-3">
+                                <HugeiconsIcon icon={Loading03Icon} size={22} className="animate-spin text-[#A8A29E]" />
+                                <p className="text-[13px] text-[#78716C]">Loading Drive files…</p>
+                            </div>
+                        ) : error ? (
+                            <div className="py-20 text-center">
+                                <p className="text-[14px] text-[#DC2626] font-medium">Failed to load Drive files.</p>
+                                <p className="text-[13px] text-[#78716C] mt-1">Make sure you have granted Drive access.</p>
+                            </div>
+                        ) : filteredFiles.length === 0 ? (
+                            <div className="py-20 flex flex-col items-center gap-3">
+                                <HugeiconsIcon icon={GoogleDriveIcon} size={28} className="text-[#D4D0CE]" />
+                                <p className="text-[13px] text-[#78716C]">No files found.</p>
+                            </div>
+                        ) : viewMode === "list" ? (
+
+                            /* ── LIST VIEW ── */
+                            <>
+                                <div className="px-4 md:px-6 py-2 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 border-y border-[#E7E5E4] bg-[#FAFAF9] shrink-0">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Name</span>
+                                    <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Type</span>
+                                    <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Modified</span>
+                                    <span className="hidden md:block text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">Size</span>
+                                    <span />
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
+                                    {filteredFiles.map((file) => {
+                                        const category = getCategory(file.mimeType);
+                                        const isSelected = selectedFile?.id === file.id;
+                                        const sizeBytes = file.size || file.quotaBytesUsed;
+                                        return (
+                                            <div
+                                                key={file.id}
+                                                onClick={() => handleRowClick(file)}
+                                                className={`px-4 md:px-6 py-3.5 grid grid-cols-[1fr_36px] md:grid-cols-[1fr_100px_140px_96px_36px] gap-3 items-center border-b border-[#F5F5F4] cursor-pointer transition-colors group ${isSelected
+                                                    ? "bg-[#F5F5F4] border-l-2 border-l-[#1C1917] pl-[14px] md:pl-[22px]"
+                                                    : "hover:bg-[#FAFAF9]"}`}
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-8 h-8 flex items-center justify-center rounded-md bg-[#F5F5F4] shrink-0">
+                                                        <FileTypeIcon category={category} />
+                                                    </div>
+                                                    <span className="text-[14px] text-[#1C1917] font-medium truncate">{file.name}</span>
+                                                </div>
+                                                <div className="hidden md:block"><TypeBadge category={category} /></div>
+                                                <span className="hidden md:block text-[13px] text-[#78716C]">{formatDate(file.modifiedTime)}</span>
+                                                <span className="hidden md:block text-[13px] text-[#78716C]">{formatSize(sizeBytes)}</span>
+                                                <div className="flex justify-end">
+                                                    <HugeiconsIcon
+                                                        icon={ArrowRight01Icon}
+                                                        size={15}
+                                                        className={`transition-colors ${isSelected ? "text-[#1C1917]" : "text-[#D4D0CE] group-hover:text-[#A8A29E]"}`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+
+                        ) : (
+
+                            /* ── GRID / CARD VIEW ── */
+                            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    {filteredFiles.map((file) => {
+                                        const category = getCategory(file.mimeType);
+                                        const { bg, color, label } = CATEGORY_CONFIG[category];
+                                        const isSelected = selectedFile?.id === file.id;
+                                        return (
+                                            <div
+                                                key={file.id}
+                                                onClick={() => handleRowClick(file)}
+                                                className={`flex flex-col gap-3 p-3.5 rounded-xl border cursor-pointer transition-all group ${isSelected
+                                                        ? "border-[#1C1917] bg-[#F5F5F4] shadow-sm"
+                                                        : "border-[#E7E5E4] bg-white hover:border-[#D6D3D1] hover:shadow-sm"
+                                                    }`}
+                                            >
+                                                {/* File type icon */}
+                                                <div
+                                                    className="w-10 h-10 flex items-center justify-center rounded-lg shrink-0"
+                                                    style={{ background: bg }}
+                                                >
+                                                    <FileTypeIcon category={category} size={20} />
+                                                </div>
+
+                                                {/* File name */}
+                                                <p className="text-[13px] font-medium text-[#1C1917] leading-snug line-clamp-2 flex-1">
+                                                    {file.name}
+                                                </p>
+
+                                                {/* Footer: type badge + modified date */}
+                                                <div className="flex items-center justify-between gap-1 mt-auto">
+                                                    <span className="text-[11px] font-semibold" style={{ color }}>
+                                                        {label}
+                                                    </span>
+                                                    <span className="text-[11px] text-[#A8A29E]">
+                                                        {formatDate(file.modifiedTime)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Slide-in detail panel — works for both views */}
                     <AnimatePresence>
                         {selectedFile && (
                             <FilePanel
