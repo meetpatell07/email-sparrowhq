@@ -21,9 +21,8 @@ export async function GET() {
             createdAt: attachments.createdAt,
             emailId: emails.id,
             emailGmailId: emails.gmailId,
-            emailSubject: emails.subject,
-            emailSender: emails.sender,
-            emailSnippet: emails.snippet,
+            // emailSubject / emailSender / emailSnippet removed — no longer stored in DB.
+            // Use emailGmailId to fetch email metadata live from Gmail API if needed.
             emailReceivedAt: emails.receivedAt,
             emailCategories: emails.categories,
         })

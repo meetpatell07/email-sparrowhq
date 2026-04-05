@@ -379,13 +379,22 @@ const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string 
     marketing:    { backgroundColor: "#ac2b16", textColor: "#ffffff" }, // dark red
 };
 
-// Convert a category key to a human-readable Gmail label name.
-// e.g.  important → "Important"   follow_up → "Follow Up"
+// Maps internal category keys to Gmail label display names.
+// "important" → "Priority" and "scheduled" → "Planned" to avoid conflicts
+// with Gmail's built-in system labels ("IMPORTANT", "SCHEDULED") which
+// cause a 409 when you try to create a user label with the same name.
+const CATEGORY_LABEL_NAMES: Record<string, string> = {
+    important:    "Priority",
+    follow_up:    "Follow Up",
+    scheduled:    "Planned",
+    finance:      "Finance",
+    personal:     "Personal",
+    notification: "Notification",
+    marketing:    "Marketing",
+};
+
 function categoryToLabelName(category: string): string {
-    return category
-        .split("_")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    return CATEGORY_LABEL_NAMES[category] ?? category;
 }
 
 // In-memory cache per user: { userId → { category → labelId } }
@@ -481,4 +490,69 @@ export async function applyGmailLabel(
     } catch (err: any) {
         console.error(`[labels] ✗ Failed to apply label for message ${messageId}: ${err?.message ?? err}`);
     }
+}
+
+// ─── Privacy-first live-fetch helpers ──────────────────────────────────────
+// These replace DB reads for content that is no longer persisted.
+
+/**
+ * Fetches only the Subject and From headers for a Gmail message.
+ * Uses format=metadata so no message body is downloaded.
+ */
+export async function fetchEmailMetadataById(
+    userId: string,
+    gmailId: string
+): Promise<{ subject: string; sender: string; snippet: string }> {
+    const gmail = await getGmailClient(userId);
+    const res = await gmail.users.messages.get({
+        userId: 'me',
+        id: gmailId,
+        format: 'metadata',
+        metadataHeaders: ['Subject', 'From'],
+    });
+    const hdrs = res.data.payload?.headers ?? [];
+    return {
+        subject: hdrs.find((h) => h.name === 'Subject')?.value ?? '(No Subject)',
+        sender:  hdrs.find((h) => h.name === 'From')?.value ?? '',
+        // snippet is returned by format=metadata at no extra cost
+        snippet: res.data.snippet ?? '',
+    };
+}
+
+/**
+ * Fetches the plain-text body of a Gmail draft.
+ * Content is never stored in our DB — this is the single source of truth.
+ */
+export async function fetchGmailDraftContent(
+    userId: string,
+    gmailDraftId: string
+): Promise<string> {
+    const gmail = await getGmailClient(userId);
+    const res = await gmail.users.drafts.get({
+        userId: 'me',
+        id: gmailDraftId,
+        format: 'full',
+    });
+    const payload = res.data.message?.payload;
+    if (!payload) return '';
+
+    if (payload.body?.data) {
+        return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+    }
+
+    // Recursively find the text/plain part in multipart messages
+    const findPlainText = (parts: any[]): string | null => {
+        for (const part of parts) {
+            if (part.mimeType === 'text/plain' && part.body?.data) {
+                return Buffer.from(part.body.data, 'base64').toString('utf-8');
+            }
+            if (part.parts?.length) {
+                const nested = findPlainText(part.parts);
+                if (nested) return nested;
+            }
+        }
+        return null;
+    };
+
+    return findPlainText(payload.parts ?? []) ?? '';
 }

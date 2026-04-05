@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
 import { user, account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { redis } from "@/lib/redis";
 
 // Recursively flatten all leaf parts of a multipart Gmail message.
 // Handles arbitrary nesting (multipart/mixed > multipart/related > etc.)
@@ -62,13 +63,38 @@ export async function processSingleEmail(
     const payload = fullMsg.data.payload;
     if (!payload) return null;
 
+    // ── Draft-loop guard ────────────────────────────────────────────────────
+    // Gmail fires a history event when we save a draft reply, which would
+    // re-enter this function, get classified as "important", and create
+    // another draft — looping forever. Block it at the earliest point.
+    const labelIds = fullMsg.data.labelIds ?? [];
+    if (labelIds.includes('DRAFT') || labelIds.includes('SENT')) {
+        console.log(`[ingest] Skipping ${messageId} — is DRAFT or SENT message`);
+        return null;
+    }
+
     const headers = payload.headers || [];
     const subject = headers.find((h) => h.name === 'Subject')?.value || '(No Subject)';
     const from = headers.find((h) => h.name === 'From')?.value || '';
-    const to = headers.find((h) => h.name === 'To')?.value || '';
+    // `to` / `snippet` / `subject` are used in-memory for AI classification and draft
+    // generation only — they are never written to the database (privacy-first).
     const dateStr = headers.find((h) => h.name === 'Date')?.value;
     const receivedAt = dateStr ? new Date(dateStr) : new Date();
     const snippet = fullMsg.data.snippet || '';
+
+    // ── Self-sender guard ───────────────────────────────────────────────────
+    // If the user sent this message themselves (e.g. a sent mail event),
+    // skip it entirely — no need to classify or draft a reply to yourself.
+    const [userRecord] = await db.select({ email: user.email })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+    const userEmail = userRecord?.email ?? null;
+
+    if (userEmail && from.toLowerCase().includes(userEmail.toLowerCase())) {
+        console.log(`[ingest] Skipping ${messageId} — sender is self (${from})`);
+        return null;
+    }
 
     // Decode body — must search recursively because Gmail nests text/plain
     // inside multipart/alternative which itself lives inside multipart/mixed.
@@ -84,17 +110,13 @@ export async function processSingleEmail(
         }
     }
 
-    // Store email — skip silently if already exists (duplicate delivery)
-    // Body is intentionally not persisted; it is kept in memory only for AI processing.
+    // Store only operational metadata — no email content ever touches the DB.
+    // subject / snippet / sender / recipient stay in-memory for AI processing only.
     const [emailRecord] = await db.insert(emails).values({
         userId,
         gmailId: messageId,
         threadId: fullMsg.data.threadId,
-        subject,
-        snippet,
         receivedAt,
-        sender: from,
-        recipient: to,
         isProcessed: false,
     }).returning({ id: emails.id }).onConflictDoNothing();
 
@@ -181,14 +203,23 @@ export async function processSingleEmail(
         categories.includes('scheduled');
 
     if (needsDraft) {
-        try {
-            // Resolve sender email for the From: header (required by RFC 2822)
-            const [userRecord] = await db.select({ email: user.email })
-                .from(user)
-                .where(eq(user.id, userId))
-                .limit(1);
-            const userEmail = userRecord?.email ?? null;
+        // ── Thread deduplication guard ──────────────────────────────────────
+        // If this thread already has a draft (pending or otherwise), don't
+        // create another one. This is the last line of defence against loops
+        // that slip past the DRAFT/SENT label checks above.
+        const threadId = fullMsg.data.threadId;
+        const existingDraft = threadId
+            ? await db.select({ id: drafts.id })
+                .from(drafts)
+                .innerJoin(emails, eq(drafts.emailId, emails.id))
+                .where(and(eq(emails.threadId, threadId), eq(emails.userId, userId)))
+                .limit(1)
+            : [];
 
+        if (existingDraft.length > 0) {
+            console.log(`[ingest] Skipping draft for ${messageId} — thread ${threadId} already has a draft`);
+        } else
+        try {
             const draftContent = await generateDraftReply(subject, body, from);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
@@ -206,7 +237,7 @@ export async function processSingleEmail(
             await db.insert(drafts).values({
                 emailId: emailRecord.id,
                 gmailDraftId,
-                content: draftContent,
+                // content not stored — draft body lives exclusively in Gmail Drafts
                 status: 'pending_approval',
             });
             console.log(`[ingest] ✓ Draft saved to DB`);
@@ -218,6 +249,12 @@ export async function processSingleEmail(
             console.error(`[ingest]   Full error:`, draftErr);
         }
     }
+
+    // Bust the Redis email list cache so the next UI fetch reflects this email.
+    // Fire-and-forget — cache miss is always recoverable.
+    redis.del(`emails:${userId}`).catch((e) =>
+        console.error('[ingest] Redis cache invalidation failed:', e)
+    );
 
     return { id: messageId, categories };
 }

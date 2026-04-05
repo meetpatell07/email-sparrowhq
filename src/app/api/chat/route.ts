@@ -86,17 +86,25 @@ async function handleAvailabilityCheck(ctx: CommandContext): Promise<string> {
 
 async function handleDraftEmail(ctx: CommandContext): Promise<string> {
     try {
-        const recentEmails = await db.select()
+        // Fetch only operational metadata from DB — no content fields in schema
+        const recentEmails = await db
+            .select({ id: emails.id, gmailId: emails.gmailId, threadId: emails.threadId, categories: emails.categories })
             .from(emails)
             .where(eq(emails.userId, ctx.userId))
             .orderBy(desc(emails.receivedAt))
             .limit(5);
 
-        const emailToReply = recentEmails.find(e => e.categories?.includes("important") || e.categories?.includes("follow_up")) || recentEmails[0];
+        const emailToReply = recentEmails.find(
+            (e) => e.categories?.includes("important") || e.categories?.includes("follow_up")
+        ) || recentEmails[0];
 
         if (!emailToReply) {
             return "I don't see any emails to draft a reply for. Your inbox seems empty!";
         }
+
+        // Fetch subject, sender, snippet live from Gmail — never stored in DB
+        const { fetchEmailMetadataById, createGmailDraft } = await import("@/lib/gmail");
+        const meta = await fetchEmailMetadataById(ctx.userId, emailToReply.gmailId);
 
         let availabilityContext = "";
         try {
@@ -113,28 +121,27 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
         }
 
         const draftContent = await generateDraftReply(
-            emailToReply.subject || "",
-            (emailToReply.snippet || "") + availabilityContext,
-            emailToReply.sender || ""
+            meta.subject,
+            meta.snippet + availabilityContext,
+            meta.sender
         );
 
-        const { createGmailDraft } = await import("@/lib/gmail");
         const gmailDraftId = await createGmailDraft(
             ctx.userId,
-            emailToReply.sender || "",
-            `Re: ${emailToReply.subject}`,
+            meta.sender,
+            `Re: ${meta.subject}`,
             draftContent,
             emailToReply.threadId || undefined
         );
 
+        // content is no longer stored in DB — it lives exclusively in Gmail Drafts
         await db.insert(drafts).values({
             emailId: emailToReply.id,
             gmailDraftId,
-            content: draftContent,
             status: "pending_approval",
         });
 
-        return `✉️ **Draft Created**\n\nReplying to: ${emailToReply.sender}\nSubject: Re: ${emailToReply.subject}\n\n---\n${draftContent}\n---\n\n✅ Draft saved to Gmail. Check your drafts to review and send!`;
+        return `✉️ **Draft Created**\n\nReplying to: ${meta.sender}\nSubject: Re: ${meta.subject}\n\n---\n${draftContent}\n---\n\n✅ Draft saved to Gmail. Check your drafts to review and send!`;
     } catch (error) {
         console.error("Draft error:", error);
         return "I couldn't create a draft. Please try again.";
@@ -194,7 +201,8 @@ If time not specified, default to 2pm. If duration not specified, use 60 minutes
 
 async function handleListEmails(ctx: CommandContext): Promise<string> {
     try {
-        const recentEmails = await db.select()
+        const recentEmails = await db
+            .select({ gmailId: emails.gmailId, categories: emails.categories, receivedAt: emails.receivedAt })
             .from(emails)
             .where(eq(emails.userId, ctx.userId))
             .orderBy(desc(emails.receivedAt))
@@ -204,9 +212,21 @@ async function handleListEmails(ctx: CommandContext): Promise<string> {
             return "📭 Your inbox is empty!";
         }
 
-        const emailList = recentEmails.map((e) => {
+        // Fetch subject + sender live from Gmail for each email in parallel
+        const { fetchEmailMetadataById } = await import("@/lib/gmail");
+        const metas = await Promise.all(
+            recentEmails.map((e) =>
+                fetchEmailMetadataById(ctx.userId, e.gmailId).catch(() => ({
+                    subject: "(No subject)",
+                    sender: "Unknown",
+                    snippet: "",
+                }))
+            )
+        );
+
+        const emailList = recentEmails.map((e, i) => {
             const category = e.categories?.length ? `[${e.categories.join(", ")}]` : "";
-            return `• ${category} ${e.subject || "(No subject)"}\n  From: ${e.sender || "Unknown"}`;
+            return `• ${category} ${metas[i].subject}\n  From: ${metas[i].sender}`;
         }).join("\n\n");
 
         return `📬 **Recent Emails**\n\n${emailList}`;
