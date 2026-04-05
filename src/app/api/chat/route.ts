@@ -104,26 +104,18 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
 
         // Fetch subject, sender, snippet live from Gmail — never stored in DB
         const { fetchEmailMetadataById, createGmailDraft } = await import("@/lib/gmail");
-        const meta = await fetchEmailMetadataById(ctx.userId, emailToReply.gmailId);
+        const { getCalendarContextForDraft } = await import("@/lib/calendar-context");
 
-        let availabilityContext = "";
-        try {
-            const { getAvailability } = await import("@/lib/calendar");
-            const availability = await getAvailability(ctx.userId, new Date());
-            if (availability.free.length > 0) {
-                const freeSlots = availability.free.slice(0, 2).map((slot) => {
-                    return `${slot.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${slot.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-                }).join(" or ");
-                availabilityContext = `\n\nNote: If they ask about availability, I'm free today at ${freeSlots}.`;
-            }
-        } catch {
-            // Skip availability if calendar isn't available
-        }
+        const [meta, calendarContext] = await Promise.all([
+            fetchEmailMetadataById(ctx.userId, emailToReply.gmailId),
+            getCalendarContextForDraft(ctx.userId, emailToReply.categories ?? []),
+        ]);
 
         const draftContent = await generateDraftReply(
             meta.subject,
-            meta.snippet + availabilityContext,
-            meta.sender
+            meta.snippet,
+            meta.sender,
+            calendarContext
         );
 
         const gmailDraftId = await createGmailDraft(
