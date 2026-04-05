@@ -7,10 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
-  { value: 50000, suffix: "+", label: "Emails classified" },
-  { value: 3,     suffix: "h",  label: "Saved per week, per user" },
-  { value: 98,    suffix: "%",  label: "Classification accuracy" },
-  { value: 12000, suffix: "+",  label: "AI drafts generated" },
+  { value: 1000, suffix: "+", label: "Emails classified" },
+  { value: 2, suffix: "h", label: "Saved per week, per user" },
+  { value: 98, suffix: "%", label: "Classification accuracy" },
+  { value: 100, suffix: "+", label: "AI drafts generated" },
 ];
 
 export function StatsBar() {

@@ -6,22 +6,22 @@ import { GithubIcon, NewTwitterIcon, LinkedinIcon } from "@hugeicons/core-free-i
 import { SparrowMark } from "./Logo";
 
 const links: Record<string, { label: string; href: string }[]> = {
-  Product:   [
-    { label: "Features",    href: "#features" },
+  Product: [
+    { label: "Features", href: "#features" },
     { label: "How it works", href: "#how-it-works" },
-    { label: "Changelog",   href: "#" },
-    { label: "Roadmap",     href: "#" },
+    { label: "Changelog", href: "#" },
+    { label: "Roadmap", href: "#" },
   ],
   Resources: [
     { label: "Documentation", href: "#" },
-    { label: "GitHub",        href: "#" },
-    { label: "Status",        href: "#" },
-    { label: "Support",       href: "#" },
+    { label: "GitHub", href: "https://github.com/meetpatell07/email-sparrowhq" },
+    { label: "Status", href: "#" },
+    { label: "Support", href: "#" },
   ],
   Legal: [
-    { label: "Privacy Policy",   href: "/privacy" },
+    { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Security",         href: "#" },
+    { label: "Security", href: "#" },
   ],
 };
 
