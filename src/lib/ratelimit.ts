@@ -21,3 +21,10 @@ export const groqRatelimit = new Ratelimit({
     limiter: Ratelimit.slidingWindow(30, "60 s"),
     prefix: "ratelimit:groq",
 });
+
+// Extension draft endpoint: max 10 per hour per user
+export const extensionDraftRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, "3600 s"),
+    prefix: "ext:draft",
+});

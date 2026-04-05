@@ -91,9 +91,12 @@ export const invoices = pgTable("invoices", {
 
 export const drafts = pgTable("drafts", {
     id: uuid("id").defaultRandom().primaryKey(),
-    emailId: uuid("emailId").notNull().references(() => emails.id, { onDelete: 'cascade' }),
+    // Nullable for extension-originated drafts that have no corresponding inbox email record.
+    // FK cascade still applies when emailId is non-null (ingest-originated drafts).
+    emailId: uuid("emailId").references(() => emails.id, { onDelete: 'cascade' }),
     gmailDraftId: text("gmailDraftId"), // ID of the draft in Gmail — content fetched live from Gmail API
     // No content column — draft body lives exclusively in Gmail Drafts.
     status: text("status").default("pending_approval"), // pending_approval, approved, sent, rejected
+    source: text("source").default("ingest"), // 'ingest' | 'extension' | 'chat'
     createdAt: timestamp("createdAt").defaultNow(),
 });
