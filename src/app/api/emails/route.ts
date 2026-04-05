@@ -2,7 +2,12 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
-export async function GET(request: Request) {
+// Always cache and serve the latest 20 emails per user.
+// Key is userId-scoped (no limit suffix) so ingest.ts can invalidate with a single del.
+const CACHE_LIMIT = 20;
+const CACHE_TTL_SECONDS = 300; // 5 minutes
+
+export async function GET() {
   try {
     const { auth } = await import("@/lib/auth");
     const session = await auth.api.getSession({ headers: await headers() });
@@ -11,16 +16,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const cacheKey = `emails:${session.user.id}`;
 
-    const cacheKey = `emails:${session.user.id}:${limit}`;
-
-    // Serve from Redis if available
+    // Serve from Redis if available — background-check watch health on cache hit
     const cached = await redis.get(cacheKey);
     if (cached) {
-      // Still check watch health in the background even on cache hit —
-      // the cache TTL is 60 s so this won't spam the Gmail API.
       const { ensureGmailWatch } = await import("@/lib/gmail");
       ensureGmailWatch(session.user.id).catch((err) =>
         console.error("[watch] ensure failed:", err)
@@ -30,17 +30,16 @@ export async function GET(request: Request) {
 
     const { fetchEmailsFromGmail, ensureGmailWatch } = await import("@/lib/gmail");
 
-    // Ensure Gmail Pub/Sub watch is active — fire-and-forget so it never
-    // blocks the email response. On first login this registers the watch;
-    // on subsequent calls it's a cheap DB read that no-ops unless expiring.
+    // Ensure Gmail Pub/Sub watch is active — fire-and-forget, never blocks response
     ensureGmailWatch(session.user.id).catch((err) =>
       console.error("[watch] ensure failed:", err)
     );
 
-    const emails = await fetchEmailsFromGmail(session.user.id, limit);
+    const emails = await fetchEmailsFromGmail(session.user.id, CACHE_LIMIT);
 
-    // Cache for 60 seconds
-    await redis.set(cacheKey, emails, { ex: 60 });
+    // Cache the enriched list (Gmail content + DB categories) for 5 minutes.
+    // Invalidated immediately when a new email is processed by ingest.ts.
+    await redis.set(cacheKey, emails, { ex: CACHE_TTL_SECONDS });
 
     return NextResponse.json({ emails });
   } catch (error) {

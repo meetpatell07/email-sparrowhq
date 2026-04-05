@@ -35,9 +35,8 @@ interface VaultAttachment {
     createdAt: string;
     emailId: string;
     emailGmailId: string;
-    emailSubject: string | null;
-    emailSender: string | null;
-    emailSnippet: string | null;
+    // emailSubject / emailSender / emailSnippet no longer stored in DB (privacy-first).
+    // Use emailGmailId to open the original email in Gmail if needed.
     emailReceivedAt: string;
     emailCategories: string[] | null;
 }
@@ -78,11 +77,6 @@ function formatDate(dateStr: string): string {
     return format(d, "d MMM yyyy");
 }
 
-function parseSenderName(sender: string | null): string {
-    if (!sender) return "Unknown";
-    const m = sender.match(/^(.+?)\s*<.+>$/);
-    return (m ? m[1] : sender).replace(/^"|"$/g, "").trim();
-}
 
 function FileIcon({ type, size = 18 }: { type: FileType; size?: number }) {
     const { color } = FILE_CONFIG[type];
@@ -210,16 +204,15 @@ function AttachmentPanel({
                         <HugeiconsIcon icon={Mail01Icon} size={13} className="text-[#78716C]" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-[#1C1917] truncate">{parseSenderName(item.emailSender)}</p>
-                        <p className="text-[12px] text-[#78716C] truncate mt-0.5">{item.emailSubject || "(No Subject)"}</p>
-                        <p className="text-[11px] text-[#A8A29E] mt-1">{formatDate(item.emailReceivedAt)}</p>
+                        <p className="text-[12px] text-[#78716C] truncate mt-0.5">Received {formatDate(item.emailReceivedAt)}</p>
+                        <a
+                            href={`/dashboard/email/${item.emailGmailId}`}
+                            className="text-[11px] text-[#A8A29E] hover:text-[#1C1917] transition-colors mt-1 inline-block"
+                        >
+                            View original email →
+                        </a>
                     </div>
                 </div>
-                {item.emailSnippet && (
-                    <p className="mt-3 text-[12px] text-[#78716C] leading-relaxed line-clamp-2 italic">
-                        &ldquo;{item.emailSnippet}&rdquo;
-                    </p>
-                )}
             </div>
 
             {/* Error */}
@@ -426,7 +419,7 @@ export default function VaultPage() {
                                     const fileType = getFileType(item.contentType, item.filename);
                                     const { bg } = FILE_CONFIG[fileType];
                                     const isSelected = selected?.id === item.id;
-                                    const senderName = parseSenderName(item.emailSender);
+                                    const senderName = formatDate(item.emailReceivedAt);
 
                                     return (
                                         <div
@@ -445,7 +438,7 @@ export default function VaultPage() {
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="text-[14px] text-[#1C1917] font-medium truncate">{item.filename}</p>
-                                                    <p className="text-[11px] text-[#A8A29E] truncate mt-0.5">{item.emailSubject || "(No Subject)"}</p>
+                                                    <p className="text-[11px] text-[#A8A29E] truncate mt-0.5">{formatDate(item.emailReceivedAt)}</p>
                                                 </div>
                                             </div>
 

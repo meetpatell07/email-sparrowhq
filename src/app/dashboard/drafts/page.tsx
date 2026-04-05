@@ -18,13 +18,14 @@ import { useState } from "react";
 interface Draft {
     id: string;
     gmailDraftId: string | null;
+    // content is fetched live from Gmail Drafts API — never stored in DB
     content: string;
     status: string;
     createdAt: string;
     emailId: string;
+    // emailSubject and emailSender are fetched live from Gmail — never stored in DB
     emailSubject: string | null;
     emailSender: string | null;
-    emailSnippet: string | null;
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());

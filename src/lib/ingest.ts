@@ -5,6 +5,7 @@ import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { redis } from "@/lib/redis";
 
 // Recursively flatten all leaf parts of a multipart Gmail message.
 // Handles arbitrary nesting (multipart/mixed > multipart/related > etc.)
@@ -75,7 +76,8 @@ export async function processSingleEmail(
     const headers = payload.headers || [];
     const subject = headers.find((h) => h.name === 'Subject')?.value || '(No Subject)';
     const from = headers.find((h) => h.name === 'From')?.value || '';
-    const to = headers.find((h) => h.name === 'To')?.value || '';
+    // `to` / `snippet` / `subject` are used in-memory for AI classification and draft
+    // generation only — they are never written to the database (privacy-first).
     const dateStr = headers.find((h) => h.name === 'Date')?.value;
     const receivedAt = dateStr ? new Date(dateStr) : new Date();
     const snippet = fullMsg.data.snippet || '';
@@ -108,17 +110,13 @@ export async function processSingleEmail(
         }
     }
 
-    // Store email — skip silently if already exists (duplicate delivery)
-    // Body is intentionally not persisted; it is kept in memory only for AI processing.
+    // Store only operational metadata — no email content ever touches the DB.
+    // subject / snippet / sender / recipient stay in-memory for AI processing only.
     const [emailRecord] = await db.insert(emails).values({
         userId,
         gmailId: messageId,
         threadId: fullMsg.data.threadId,
-        subject,
-        snippet,
         receivedAt,
-        sender: from,
-        recipient: to,
         isProcessed: false,
     }).returning({ id: emails.id }).onConflictDoNothing();
 
@@ -251,6 +249,12 @@ export async function processSingleEmail(
             console.error(`[ingest]   Full error:`, draftErr);
         }
     }
+
+    // Bust the Redis email list cache so the next UI fetch reflects this email.
+    // Fire-and-forget — cache miss is always recoverable.
+    redis.del(`emails:${userId}`).catch((e) =>
+        console.error('[ingest] Redis cache invalidation failed:', e)
+    );
 
     return { id: messageId, categories };
 }

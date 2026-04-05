@@ -22,19 +22,16 @@ export async function classifyIndividualEmail(gmailId: string, subject: string, 
         throw new Error("Unauthorized");
     }
 
-    // Try to find if it exists in DB first
-    const existing = await db.select().from(emails).where(eq(emails.gmailId, gmailId)).limit(1);
+    // subject / snippet are used in-memory for classification only — never stored
+    const existing = await db.select({ id: emails.id }).from(emails).where(eq(emails.gmailId, gmailId)).limit(1);
 
     let emailId: string;
     if (existing.length === 0) {
-        // Create it
         const [inserted] = await db.insert(emails).values({
             userId: session.user.id,
             gmailId,
-            subject,
-            snippet,
             receivedAt,
-            isProcessed: false
+            isProcessed: false,
         }).returning({ id: emails.id });
         emailId = inserted.id;
     } else {
@@ -116,41 +113,27 @@ export async function approveDraft(draftId: string) {
         throw new Error("Unauthorized");
     }
 
-    // Fetch draft
-    const draftList = await db.select({
-        draft: drafts,
-        email: emails
+    // Fetch only what's needed — no content fields in schema
+    const [item] = await db.select({
+        gmailDraftId: drafts.gmailDraftId,
     })
         .from(drafts)
         .innerJoin(emails, eq(drafts.emailId, emails.id))
         .where(and(eq(drafts.id, draftId), eq(emails.userId, session.user.id)));
 
-    const item = draftList[0];
     if (!item) throw new Error("Draft not found");
+    if (!item.gmailDraftId) throw new Error("No Gmail draft ID associated with this record");
 
-    const { draft, email } = item;
-
-    // Send via Gmail
+    // Send the draft directly from Gmail — content, headers, and thread context are
+    // already correct because createGmailDraft set them when the draft was created.
     const gmail = await getGmailClient(session.user.id);
 
-    // Construct raw email
-    // Headers: To (Original Sender), Subject (Re: ...), In-Reply-To
-    const rawMessage = makeBody(
-        email.subject?.startsWith("Re:") ? email.subject : `Re: ${email.subject}`,
-        email.sender || "recipient@example.com",
-        draft.content
-    );
-
     try {
-        await gmail.users.messages.send({
+        await gmail.users.drafts.send({
             userId: 'me',
-            requestBody: {
-                raw: rawMessage,
-                threadId: email.threadId || undefined
-            }
+            requestBody: { id: item.gmailDraftId },
         });
 
-        // Update status
         await db.update(drafts).set({ status: 'sent' }).where(eq(drafts.id, draftId));
         revalidatePath("/dashboard");
         return { success: true };
@@ -184,17 +167,3 @@ export async function discardDraft(draftId: string) {
 }
 
 
-// Helper to base64url encode email
-function makeBody(subject: string, to: string, body: string) {
-    const str = [
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        `Content-Type: text/plain; charset="UTF-8"`,
-        `MIME-Version: 1.0`,
-        `Content-Transfer-Encoding: 7bit`,
-        ``,
-        body
-    ].join("\n");
-
-    return Buffer.from(str).toString("base64").replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}

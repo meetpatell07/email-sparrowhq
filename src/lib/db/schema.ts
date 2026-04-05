@@ -57,12 +57,10 @@ export const emails = pgTable("emails", {
     userId: text("userId").notNull().references(() => user.id),
     gmailId: text("gmailId").notNull().unique(),
     threadId: text("threadId"),
-    subject: text("subject"),
-    snippet: text("snippet"),
+    // No subject / snippet / sender / recipient — email content is never persisted.
+    // All display data is fetched live from Gmail API (cached in Redis).
     receivedAt: timestamp("receivedAt").notNull(),
-    sender: text("sender"), // The From header
-    recipient: text("recipient"), // To header
-    categories: text("categories").array(), // e.g. ["important"]
+    categories: text("categories").array(), // AI classification result — derived, not raw content
     isProcessed: boolean("isProcessed").default(false),
     createdAt: timestamp("createdAt").defaultNow(),
 });
@@ -94,8 +92,8 @@ export const invoices = pgTable("invoices", {
 export const drafts = pgTable("drafts", {
     id: uuid("id").defaultRandom().primaryKey(),
     emailId: uuid("emailId").notNull().references(() => emails.id, { onDelete: 'cascade' }),
-    gmailDraftId: text("gmailDraftId"), // ID of the draft in Gmail
-    content: text("content").notNull(),
+    gmailDraftId: text("gmailDraftId"), // ID of the draft in Gmail — content fetched live from Gmail API
+    // No content column — draft body lives exclusively in Gmail Drafts.
     status: text("status").default("pending_approval"), // pending_approval, approved, sent, rejected
     createdAt: timestamp("createdAt").defaultNow(),
 });
