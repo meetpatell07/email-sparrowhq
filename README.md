@@ -1,19 +1,19 @@
-# SparrowHQ
+# EmailHQ
 
-An AI-powered email management platform that connects to Gmail, Google Calendar, and Google Drive. Automatically classifies emails into smart categories, generates draft replies, extracts invoice data, applies Gmail labels in real time via a Google Cloud Pub/Sub + QStash pipeline, stores attachments in Cloudflare R2, and lets you manage your inbox through a conversational AI assistant — all from a minimal, mobile-responsive dashboard.
+An AI-powered email management platform that connects to Gmail, Google Calendar, and Google Drive. Automatically classifies emails into smart categories, generates calendar-aware draft replies, extracts invoice data, applies Gmail labels in real time via a Google Cloud Pub/Sub + QStash pipeline, stores attachments in Cloudflare R2, and lets you manage your inbox through a conversational AI assistant — all from a minimal, mobile-responsive dashboard.
 
 ## Features
 
 - **Privacy-First Architecture** — No email content (subject, body, sender, snippet) is ever written to the database. All display data is fetched live from Gmail API and cached in Redis. Only operational metadata (`gmailId`, `threadId`, `receivedAt`, `categories`) is persisted.
 - **Real-time Ingestion Pipeline** — Gmail Pub/Sub push → QStash queue → per-email processing with automatic retries. No polling required.
-- **Smart Classification** — Classifies every email into a single category: `Important`, `Follow Up`, `Planned`, `Finance`, `Personal`, `Notification`, or `Marketing` using a local Ollama/LLM model.
+- **Smart Classification** — Classifies every email into one or two categories: `Priority`, `Follow Up`, `Planned`, `Finance`, `Personal`, `Notification`, or `Marketing` using an AI model with Zod schema validation.
 - **Gmail Label Sync** — Creates and applies colour-coded labels directly in Gmail automatically on every ingest. Labels are namespaced to avoid conflicts with Gmail system labels (`Priority` instead of `Important`, `Planned` instead of `Scheduled`).
-- **Auto-Draft Replies** — Generates AI reply drafts for `Important`, `Follow Up`, and `Planned` emails, saved directly to Gmail Drafts with a pending-approval workflow. Draft content is never stored in the database.
+- **Calendar-Aware Draft Replies** — Before generating a reply draft, the pipeline checks your Google Calendar for availability and upcoming events. If someone asks "can we meet Thursday at 2pm?" and you're already booked, the draft suggests an alternative slot from your real calendar. Calendar context is fetched with a 4-second timeout so it never blocks processing. Only relevant categories (`Priority`, `Follow Up`, `Planned`) trigger a calendar lookup.
 - **Invoice Extraction** — Detects finance emails and extracts vendor name, amount, currency, and due date into a structured invoices table.
 - **Attachment Vault** — Email attachments uploaded to Cloudflare R2, browseable in the Vault with download, save-to-Drive, and draft-reply actions.
-- **AI Chat Assistant** — Natural language interface: draft replies, check calendar, create events, list emails — powered by the same local LLM.
-- **Google Calendar** — View events grouped by day with attendee avatars, duration, and Google Meet join links. Covers past and upcoming events.
-- **Google Drive Browser** — Browse all Drive files (Docs, Sheets, Slides, PDFs) with category filter tabs, file detail panel, open-in-Drive, and send-as-email actions.
+- **AI Chat Assistant** — Natural language interface: draft replies (with calendar context), check calendar, create events, list emails — powered by the same AI model.
+- **Google Calendar** — View events for the next 7 days grouped by date cards. Each card shows event title, time, and duration. Click the arrow icon to jump to that day in Google Calendar.
+- **Google Drive Browser** — Browse all Drive files (Docs, Sheets, Slides, PDFs) with list/grid toggle, file detail panel, open-in-Drive, and send-as-email actions.
 - **Connected Accounts** — Settings page shows live connection status per Google account (token health, Gmail watch expiry, granted scopes) with one-click reconnect and disconnect.
 - **Mobile-Responsive** — Full bottom navigation, slide-in sidebar drawer, and responsive tables on all screen sizes.
 - **Vercel Analytics** — Page view tracking via `@vercel/analytics`.
@@ -22,7 +22,7 @@ An AI-powered email management platform that connects to Gmail, Google Calendar,
 
 | Layer        | Technology                                      |
 |--------------|-------------------------------------------------|
-| Framework    | Next.js (App Router)                            |
+| Framework    | Next.js 15 (App Router)                         |
 | Database     | Neon PostgreSQL + Drizzle ORM                   |
 | Auth         | Better Auth with Google OAuth 2.0               |
 | AI / LLM     | Ollama (local) — configurable model via env     |
@@ -127,10 +127,25 @@ Gmail receives email
                  ├─ Classify with AI → update categories in DB
                  ├─ Apply Gmail label (awaited — not fire-and-forget)
                  ├─ If finance → extract invoice data → store
-                 ├─ If important/follow_up/planned → check thread dedup → generate draft
+                 ├─ If important/follow_up/planned →
+                 │    ├─ Fetch calendar availability + events (4s timeout guard)
+                 │    ├─ Check thread dedup → skip if draft already exists
+                 │    ├─ Generate calendar-aware draft reply
                  │    └─ Save draft to Gmail Drafts + drafts table (no content stored)
                  └─ Invalidate Redis email list cache
 ```
+
+## Calendar-Aware Drafting
+
+All draft generation — whether triggered by the ingest pipeline or the AI chat assistant — goes through a shared `getCalendarContextForDraft` helper in `src/lib/calendar-context.ts`.
+
+The helper:
+1. Checks if the email's categories are scheduling-relevant (`important`, `follow_up`, `planned`). Non-relevant categories (marketing, notification, personal, finance) skip the calendar lookup entirely.
+2. For `planned` emails, fetches a 7-day event window. For `important`/`follow_up`, fetches today's availability only.
+3. Uses a 4-second `Promise.race` timeout so a slow Calendar API response never delays the draft.
+4. Returns a structured `[Calendar Context]` block that the AI model uses to propose real free time slots instead of generic placeholders.
+
+In the AI chat handler, Gmail metadata and calendar context are fetched in parallel via `Promise.all` to minimise latency.
 
 ## Privacy-First Data Model
 
@@ -206,6 +221,8 @@ src/
 │   │   ├── categories/            # Category reference
 │   │   ├── settings/              # Account, connections, sign-out
 │   │   └── profile/               # Profile page
+│   ├── about/                     # Product story & open source rationale
+│   ├── roadmap/                   # Changelog + future plans timeline
 │   ├── login/                     # Auth page
 │   ├── privacy/                   # Privacy Policy
 │   └── terms/                     # Terms of Service
@@ -214,12 +231,14 @@ src/
 │   ├── Sidebar.tsx                # Desktop nav + mobile drawer
 │   ├── AIChatPanel.tsx            # Right-panel AI assistant
 │   ├── EmailRow.tsx               # Email list item with live classification
-│   ├── DriveFilesTab.tsx          # Drive file grid
-│   └── SignOutButton.tsx          # Parallel sign-out + token clear
+│   ├── DriveFilesTab.tsx          # Drive file grid/list (viewMode prop)
+│   ├── SignOutButton.tsx          # Parallel sign-out + token clear
+│   └── landing/                   # Landing page sections (Hero, Features, Footer, etc.)
 └── lib/
     ├── ai.ts                      # classify, generateDraft, extractInvoice
     ├── auth.ts                    # Better Auth + encrypted token adapter
     ├── calendar.ts                # Google Calendar client
+    ├── calendar-context.ts        # Shared calendar-aware context builder for drafts
     ├── gmail.ts                   # Gmail client, label management, live fetch helpers
     ├── ingest.ts                  # listNewEmailIds + processSingleEmail
     ├── encryption.ts              # AES-256-CBC token encryption
