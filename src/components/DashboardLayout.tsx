@@ -11,7 +11,6 @@ import {
     CommandIcon,
     Menu01Icon,
     Home01Icon,
-    Mail01Icon,
     Archive01Icon,
     CheckmarkSquare01Icon,
     Settings01Icon,
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils";
 
 const mobileNav = [
     { name: "Home",     icon: Home01Icon,             href: "/dashboard" },
-    { name: "Emails",   icon: Mail01Icon,              href: "/dashboard/emails" },
     { name: "Vault",    icon: Archive01Icon,           href: "/dashboard/vault" },
     { name: "Drafts",   icon: CheckmarkSquare01Icon,   href: "/dashboard/drafts" },
     { name: "Settings", icon: Settings01Icon,          href: "/dashboard/settings" },
