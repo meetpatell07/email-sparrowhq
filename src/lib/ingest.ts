@@ -220,7 +220,10 @@ export async function processSingleEmail(
             console.log(`[ingest] Skipping draft for ${messageId} — thread ${threadId} already has a draft`);
         } else
         try {
-            const draftContent = await generateDraftReply(subject, body, from);
+            const { getCalendarContextForDraft } = await import("@/lib/calendar-context");
+            const calendarContext = await getCalendarContextForDraft(userId, categories);
+
+            const draftContent = await generateDraftReply(subject, body, from, calendarContext);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
 

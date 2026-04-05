@@ -34,8 +34,6 @@ export function Hero() {
       className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden pt-16"
       style={{ background: "var(--lp-bg-primary)" }}
     >
-      {/* Background gradient */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--lp-gradient-hero)" }} />
 
 {/* 3D canvas — desktop only */}
       <div className="hidden lg:block absolute inset-0 pointer-events-none">

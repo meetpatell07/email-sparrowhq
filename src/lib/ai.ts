@@ -122,13 +122,31 @@ ${content}`;
     return invoiceSchema.parse(parsed);
 }
 
-export async function generateDraftReply(subject: string, body: string, sender: string, calendarContext?: string) {
-    const content = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
-    const calPart = calendarContext ? `\n\nYour availability for context:\n${calendarContext}` : "";
-    const prompt = `Draft a short, professional reply to this email. Keep it neutral, polite, and concise — 2-4 sentences maximum. Do not add a subject line or headers.${calPart}
+export async function generateDraftReply(
+    subject: string,
+    body: string,
+    sender: string,
+    calendarContext?: string
+) {
+    const emailContent = `Sender: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2000)}`;
 
-Email Content:
-${content}`;
+    const calSection = calendarContext
+        ? `\n\n${calendarContext}\n\nHow to use the calendar context:
+- If the email is requesting a meeting or asking about availability, propose specific free time slots naturally (e.g. "I'm free Tuesday at 2 pm or Wednesday between 10 am – 12 pm").
+- If you are fully booked today, acknowledge it and suggest the next available day.
+- If the email has nothing to do with scheduling, ignore the calendar context entirely.`
+        : "";
+
+    const prompt = `You are drafting a concise, professional email reply on behalf of the user.
+
+Email to reply to:
+${emailContent}${calSection}
+
+Rules:
+- 2–4 sentences only. No fluff.
+- No subject line, greeting, sign-off, or headers — just the reply body.
+- If scheduling is involved, reference actual availability from the calendar context above.
+- Match the tone of the incoming email (formal stays formal, casual stays casual).`;
 
     return callGroq(prompt);
 }
