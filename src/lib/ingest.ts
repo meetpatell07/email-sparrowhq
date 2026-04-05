@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { user, account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
-import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
+import { classifyEmail, extractInvoiceData, generateDraftReply, shouldGenerateDraft } from "@/lib/ai";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { redis } from "@/lib/redis";
@@ -85,11 +85,12 @@ export async function processSingleEmail(
     // ── Self-sender guard ───────────────────────────────────────────────────
     // If the user sent this message themselves (e.g. a sent mail event),
     // skip it entirely — no need to classify or draft a reply to yourself.
-    const [userRecord] = await db.select({ email: user.email })
+    const [userRecord] = await db.select({ email: user.email, name: user.name })
         .from(user)
         .where(eq(user.id, userId))
         .limit(1);
     const userEmail = userRecord?.email ?? null;
+    const userName = userRecord?.name || userRecord?.email || "Unknown";
 
     if (userEmail && from.toLowerCase().includes(userEmail.toLowerCase())) {
         console.log(`[ingest] Skipping ${messageId} — sender is self (${from})`);
@@ -196,13 +197,21 @@ export async function processSingleEmail(
         }
     }
 
-    // Auto-draft for emails requiring action (important / follow_up / scheduled)
+    // Auto-draft only for action categories: important and follow_up.
+    // Scheduled is intentionally excluded — calendar events don't need a drafted reply.
     const needsDraft =
         categories.includes('important') ||
-        categories.includes('follow_up') ||
-        categories.includes('scheduled');
+        categories.includes('follow_up');
 
     if (needsDraft) {
+        // ── AI gate: does this email actually warrant a reply? ──────────────
+        // Filters out automated alerts, FYI-only emails, no-reply senders, etc.
+        // even when they land in an action category.
+        const draftNeeded = await shouldGenerateDraft(subject, body, from).catch(() => true);
+        if (!draftNeeded) {
+            console.log(`[ingest] Skipping draft for ${messageId} — AI determined no reply needed`);
+        } else {
+
         // ── Thread deduplication guard ──────────────────────────────────────
         // If this thread already has a draft (pending or otherwise), don't
         // create another one. This is the last line of defence against loops
@@ -223,7 +232,7 @@ export async function processSingleEmail(
             const { getCalendarContextForDraft } = await import("@/lib/calendar-context");
             const calendarContext = await getCalendarContextForDraft(userId, categories);
 
-            const draftContent = await generateDraftReply(subject, body, from, calendarContext);
+            const draftContent = await generateDraftReply(subject, body, from, userName, calendarContext);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
 
@@ -251,6 +260,7 @@ export async function processSingleEmail(
             console.error(`[ingest]   Error code:    ${draftErr?.code}`);
             console.error(`[ingest]   Full error:`, draftErr);
         }
+        } // end draftNeeded block
     }
 
     // Bust the Redis email list cache so the next UI fetch reflects this email.
