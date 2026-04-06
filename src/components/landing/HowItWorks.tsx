@@ -342,20 +342,25 @@ export function HowItWorks() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Heading clip-path reveal
+      // Heading clip-path reveal — reverses when scrolling back up
       gsap.fromTo(
         headingRef.current,
-        { clipPath: "inset(0 0 100% 0)", y: 20 },
+        { clipPath: "inset(0 0 100% 0)", y: 16 },
         {
           clipPath: "inset(0 0 0% 0)",
           y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          scrollTrigger: { trigger: headingRef.current, start: "top 80%", once: true },
+          duration: 0.85,
+          ease: "power3.inOut",
+          scrollTrigger: {
+            trigger: headingRef.current,
+            start: "top 82%",
+            end: "top 10%",
+            toggleActions: "play reverse play reverse",
+          },
         }
       );
 
-      // Timeline line draw
+      // Timeline line draw — scrub ties draw progress to scroll (bidirectional by nature)
       gsap.fromTo(
         lineRef.current,
         { scaleY: 0, transformOrigin: "top center" },
@@ -371,23 +376,28 @@ export function HowItWorks() {
         }
       );
 
-      // Each step: slide-up reveal
+      // Each step slides up — reverses as you scroll back past it
       stepRefs.current.forEach((el, i) => {
         if (!el) return;
 
         gsap.fromTo(
           el,
-          { y: 40, opacity: 0 },
+          { y: 22, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            duration: 0.7,
+            duration: 0.6,
             ease: "power2.out",
-            scrollTrigger: { trigger: el, start: "top 80%", once: true },
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              end: "top 10%",
+              toggleActions: "play reverse play reverse",
+            },
           }
         );
 
-        // Active step tracking
+        // Active step tracking (unchanged)
         ScrollTrigger.create({
           trigger: el,
           start: "top 55%",
