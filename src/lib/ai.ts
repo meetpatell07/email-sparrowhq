@@ -216,6 +216,18 @@ Write a complete, properly structured reply. Use this exact structure with a bla
 8. Blank line
 9. Sign-off — "Best regards," on its own line, then "${userName}" on the next line
 
+Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
+
+1. Greeting — "Hi ${senderFirstName}," (use "Dear ${senderFirstName}," if the email is very formal)
+2. Blank line
+3. Opening sentence — one concise sentence acknowledging what they wrote about (no generic openers like "I hope this email finds you well")
+4. Blank line
+5. Main reply — 2–3 sentences directly addressing their question, request, or message. Be specific — reference actual details from their email. Do not be vague or generic.
+6. Blank line
+7. Closing sentence — one natural sentence (e.g. "Let me know if you have any questions." or "Looking forward to hearing from you.")
+8. Blank line
+9. Sign-off — "Best regards," on its own line, then "${userName}" on the next line
+
 Rules:
 - Use \\n\\n between every section
 - Match the tone of their email: formal stays formal, casual stays casual
