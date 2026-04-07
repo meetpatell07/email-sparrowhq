@@ -13,6 +13,7 @@ import {
     UserCircleIcon,
     GoogleDriveIcon,
     Cancel01Icon,
+    ListViewIcon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
@@ -24,6 +25,7 @@ const mainNav = [
     { name: "Vault",       icon: Archive01Icon,         href: "/dashboard/vault" },
     { name: "Drafts",      icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
     { name: "Drive",       icon: GoogleDriveIcon,       href: "/dashboard/drive" },
+    { name: "Trust Log",   icon: ListViewIcon,          href: "/dashboard/audit" },
 ];
 
 interface SidebarProps {

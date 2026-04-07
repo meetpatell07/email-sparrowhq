@@ -36,6 +36,23 @@
                 <img class="favicon" id="page-favicon" src="" alt="" />
                 <span class="page-title" id="page-title"></span>
             </div>
+
+            <!-- LinkedIn contact auto-fill banner (shown only on LinkedIn profiles) -->
+            <div id="linkedin-banner" class="linkedin-banner hidden">
+                <span class="linkedin-icon">in</span>
+                <div class="linkedin-info">
+                    <span id="linkedin-name" class="linkedin-name"></span>
+                    <span id="linkedin-title" class="linkedin-subtitle"></span>
+                </div>
+                <button id="btn-linkedin-import" class="btn-import" type="button">Import</button>
+            </div>
+
+            <!-- Selection indicator (shown when opened via right-click) -->
+            <div id="selection-banner" class="selection-banner hidden">
+                <span class="selection-icon">✂</span>
+                <span id="selection-preview" class="selection-preview"></span>
+            </div>
+
             <form id="draft-form">
                 <div class="field">
                     <label for="recipient">Recipient</label>
