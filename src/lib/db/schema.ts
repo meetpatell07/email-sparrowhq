@@ -100,3 +100,28 @@ export const drafts = pgTable("drafts", {
     source: text("source").default("ingest"), // 'ingest' | 'extension' | 'chat'
     createdAt: timestamp("createdAt").defaultNow(),
 });
+
+// Audit log — every action the AI took, visible in the dashboard Trust Log.
+// Privacy-safe: no email subjects or body text — only action types, categories,
+// Gmail message IDs, and boolean decisions.
+export const auditLogs = pgTable("audit_logs", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("userId").notNull().references(() => user.id),
+    action: text("action").notNull(),
+    // e.g. email_classified | draft_created | draft_skipped_ai_gate |
+    //      draft_skipped_thread_exists | invoice_extracted | label_applied |
+    //      draft_approved | draft_rejected
+    gmailMessageId: text("gmail_message_id"),
+    metadata: jsonb("metadata"), // { categories, reason, source, … }
+    createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// Writing style samples — approved draft bodies stored to teach the AI
+// the user's preferred tone and structure. Capped at 5 per user.
+// These are the user's own approved outputs — not incoming email content.
+export const styleSamples = pgTable("style_samples", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("userId").notNull().references(() => user.id),
+    content: text("content").notNull(),
+    createdAt: timestamp("createdAt").defaultNow(),
+});

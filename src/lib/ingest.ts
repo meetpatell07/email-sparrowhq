@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { user, account, emails, attachments, invoices, drafts } from "@/lib/db/schema";
+import { user, account, emails, attachments, invoices, drafts, styleSamples } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply, shouldGenerateDraft } from "@/lib/ai";
+import { logAudit } from "@/lib/audit";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { redis } from "@/lib/redis";
@@ -94,6 +95,7 @@ export async function processSingleEmail(
 
     if (userEmail && from.toLowerCase().includes(userEmail.toLowerCase())) {
         console.log(`[ingest] Skipping ${messageId} — sender is self (${from})`);
+        await logAudit(userId, "draft_skipped_self_sender", messageId, { reason: "sender_is_self" });
         return null;
     }
 
@@ -179,8 +181,11 @@ export async function processSingleEmail(
         .set({ categories, isProcessed: true })
         .where(eq(emails.id, emailRecord.id));
 
+    await logAudit(userId, "email_classified", messageId, { categories });
+
     // Apply Gmail labels — must be awaited; fire-and-forget gets killed by serverless before it resolves
     await applyGmailLabel(userId, messageId, categories);
+    await logAudit(userId, "label_applied", messageId, { categories });
 
     // Invoice extraction
     if (categories.includes('finance')) {
@@ -193,6 +198,11 @@ export async function processSingleEmail(
                 currency: invoiceData.currency,
                 dueDate: invoiceData.dueDate ? new Date(invoiceData.dueDate) : null,
                 extractedData: invoiceData,
+            });
+            await logAudit(userId, "invoice_extracted", messageId, {
+                vendorName: invoiceData.vendorName,
+                amount: invoiceData.amount,
+                currency: invoiceData.currency,
             });
         }
     }
@@ -210,6 +220,10 @@ export async function processSingleEmail(
         const draftNeeded = await shouldGenerateDraft(subject, body, from).catch(() => true);
         if (!draftNeeded) {
             console.log(`[ingest] Skipping draft for ${messageId} — AI determined no reply needed`);
+            await logAudit(userId, "draft_skipped_ai_gate", messageId, {
+                reason: "ai_determined_no_reply_needed",
+                categories,
+            });
         } else {
 
         // ── Thread deduplication guard ──────────────────────────────────────
@@ -227,12 +241,21 @@ export async function processSingleEmail(
 
         if (existingDraft.length > 0) {
             console.log(`[ingest] Skipping draft for ${messageId} — thread ${threadId} already has a draft`);
+            await logAudit(userId, "draft_skipped_thread_exists", messageId, { threadId });
         } else
         try {
             const { getCalendarContextForDraft } = await import("@/lib/calendar-context");
             const calendarContext = await getCalendarContextForDraft(userId, categories);
 
-            const draftContent = await generateDraftReply(subject, body, from, userName, calendarContext);
+            // Load user's style samples to teach the AI their writing style
+            const userStyleSamples = await db.select({ content: styleSamples.content })
+                .from(styleSamples)
+                .where(eq(styleSamples.userId, userId))
+                .orderBy(desc(styleSamples.createdAt))
+                .limit(3);
+            const styleExamples = userStyleSamples.map(s => s.content);
+
+            const draftContent = await generateDraftReply(subject, body, from, userName, calendarContext, styleExamples);
 
             const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
 
@@ -251,6 +274,11 @@ export async function processSingleEmail(
                 gmailDraftId,
                 // content not stored — draft body lives exclusively in Gmail Drafts
                 status: 'pending_approval',
+            });
+            await logAudit(userId, "draft_created", messageId, {
+                categories,
+                gmailDraftId,
+                usedStyleSamples: styleExamples.length,
             });
             console.log(`[ingest] ✓ Draft saved to DB`);
         } catch (draftErr: any) {

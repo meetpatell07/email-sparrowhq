@@ -185,7 +185,8 @@ export async function generateDraftReply(
     body: string,
     sender: string,
     userName: string,
-    calendarContext?: string
+    calendarContext?: string,
+    styleExamples?: string[]
 ) {
     const senderFirstName = extractSenderFirstName(sender);
     const emailContent = `From: ${sender}\nSubject: ${subject}\nBody: ${body.slice(0, 2500)}`;
@@ -194,10 +195,26 @@ export async function generateDraftReply(
         ? `\n\nCalendar context (your availability):\n${calendarContext}\n\nIf the email is about scheduling or availability, propose specific free time slots naturally (e.g. "I'm free Tuesday at 2 pm or Wednesday between 10–12"). Ignore this section if scheduling is not relevant.`
         : "";
 
+    const styleSection = styleExamples && styleExamples.length > 0
+        ? `\n\nWriting style reference — previous emails ${userName} has approved. Mirror their tone, sentence length, vocabulary, and sign-off style. Do NOT copy content, only style:\n${styleExamples.map((ex, i) => `--- Example ${i + 1} ---\n${ex.slice(0, 600)}`).join("\n\n")}`
+        : "";
+
     const prompt = `You are drafting a professional email reply on behalf of ${userName}.
 
 Email you are replying to:
-${emailContent}${calSection}
+${emailContent}${calSection}${styleSection}
+
+Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
+
+1. Greeting — "Hi ${senderFirstName}," (use "Dear ${senderFirstName}," if the email is very formal)
+2. Blank line
+3. Opening sentence — one concise sentence acknowledging what they wrote about (no generic openers like "I hope this email finds you well")
+4. Blank line
+5. Main reply — 2–3 sentences directly addressing their question, request, or message. Be specific — reference actual details from their email. Do not be vague or generic.
+6. Blank line
+7. Closing sentence — one natural sentence (e.g. "Let me know if you have any questions." or "Looking forward to hearing from you.")
+8. Blank line
+9. Sign-off — "Best regards," on its own line, then "${userName}" on the next line
 
 Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
 

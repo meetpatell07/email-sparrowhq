@@ -4,10 +4,11 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { drafts, emails, account } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { getGmailClient, applyGmailLabel } from "@/lib/gmail";
+import { drafts, emails, account, styleSamples } from "@/lib/db/schema";
+import { eq, and, count, desc } from "drizzle-orm";
+import { getGmailClient, applyGmailLabel, fetchGmailDraftContent } from "@/lib/gmail";
 import { revalidatePath } from "next/cache";
+import { logAudit } from "@/lib/audit";
 
 
 import { processIngestion } from "@/lib/ingest";
@@ -116,6 +117,7 @@ export async function approveDraft(draftId: string) {
     // Fetch only what's needed — no content fields in schema
     const [item] = await db.select({
         gmailDraftId: drafts.gmailDraftId,
+        emailGmailId: emails.gmailId,
     })
         .from(drafts)
         .innerJoin(emails, eq(drafts.emailId, emails.id))
@@ -123,6 +125,20 @@ export async function approveDraft(draftId: string) {
 
     if (!item) throw new Error("Draft not found");
     if (!item.gmailDraftId) throw new Error("No Gmail draft ID associated with this record");
+
+    // Capture style sample before sending (content lives in Gmail, not our DB)
+    try {
+        const content = await fetchGmailDraftContent(session.user.id, item.gmailDraftId);
+        if (content && content.trim().length > 20) {
+            await db.insert(styleSamples).values({ userId: session.user.id, content: content.trim() });
+            // Prune to 5 most recent
+            const [{ total }] = await db.select({ total: count() }).from(styleSamples).where(eq(styleSamples.userId, session.user.id));
+            if (total > 5) {
+                const oldest = await db.select({ id: styleSamples.id }).from(styleSamples).where(eq(styleSamples.userId, session.user.id)).orderBy(styleSamples.createdAt).limit(total - 5);
+                for (const row of oldest) await db.delete(styleSamples).where(eq(styleSamples.id, row.id));
+            }
+        }
+    } catch (_) { /* style capture is best-effort */ }
 
     // Send the draft directly from Gmail — content, headers, and thread context are
     // already correct because createGmailDraft set them when the draft was created.
@@ -135,6 +151,7 @@ export async function approveDraft(draftId: string) {
         });
 
         await db.update(drafts).set({ status: 'sent' }).where(eq(drafts.id, draftId));
+        await logAudit(session.user.id, "draft_approved", item.emailGmailId ?? null, { draftId, sentViaAction: true });
         revalidatePath("/dashboard");
         return { success: true };
     } catch (e) {
@@ -153,15 +170,15 @@ export async function discardDraft(draftId: string) {
     }
 
     // Verify ownership via join
-    const exists = await db.select({ id: drafts.id })
+    const [existing] = await db.select({ id: drafts.id, emailGmailId: emails.gmailId })
         .from(drafts)
         .innerJoin(emails, eq(drafts.emailId, emails.id))
         .where(and(eq(drafts.id, draftId), eq(emails.userId, session.user.id)));
 
-    if (exists.length === 0) throw new Error("Draft not found");
+    if (!existing) throw new Error("Draft not found");
 
-    // Delete the draft
     await db.delete(drafts).where(eq(drafts.id, draftId));
+    await logAudit(session.user.id, "draft_rejected", existing.emailGmailId ?? null, { draftId });
     revalidatePath("/dashboard/drafts");
     return { success: true };
 }
