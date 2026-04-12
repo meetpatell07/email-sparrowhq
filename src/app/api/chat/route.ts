@@ -95,7 +95,7 @@ async function handleDraftEmail(ctx: CommandContext): Promise<string> {
             .limit(5);
 
         const emailToReply = recentEmails.find(
-            (e) => e.categories?.includes("important") || e.categories?.includes("follow_up")
+            (e) => e.categories?.includes("priority") || e.categories?.includes("follow_up")
         ) || recentEmails[0];
 
         if (!emailToReply) {
