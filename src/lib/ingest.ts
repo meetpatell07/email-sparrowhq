@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { user, account, emails, attachments, invoices, drafts, styleSamples } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
-import { classifyEmail, extractInvoiceData, generateDraftReply, shouldGenerateDraft } from "@/lib/ai";
+import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { logAudit } from "@/lib/audit";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -66,7 +66,7 @@ export async function processSingleEmail(
 
     // ── Draft-loop guard ────────────────────────────────────────────────────
     // Gmail fires a history event when we save a draft reply, which would
-    // re-enter this function, get classified as "important", and create
+    // re-enter this function, get classified as "priority", and create
     // another draft — looping forever. Block it at the earliest point.
     const labelIds = fullMsg.data.labelIds ?? [];
     if (labelIds.includes('DRAFT') || labelIds.includes('SENT')) {
@@ -207,25 +207,13 @@ export async function processSingleEmail(
         }
     }
 
-    // Auto-draft only for action categories: important and follow_up.
+    // Auto-draft only for action categories: priority and follow_up.
     // Scheduled is intentionally excluded — calendar events don't need a drafted reply.
     const needsDraft =
-        categories.includes('important') ||
+        categories.includes('priority') ||
         categories.includes('follow_up');
 
     if (needsDraft) {
-        // ── AI gate: does this email actually warrant a reply? ──────────────
-        // Filters out automated alerts, FYI-only emails, no-reply senders, etc.
-        // even when they land in an action category.
-        const draftNeeded = await shouldGenerateDraft(subject, body, from).catch(() => true);
-        if (!draftNeeded) {
-            console.log(`[ingest] Skipping draft for ${messageId} — AI determined no reply needed`);
-            await logAudit(userId, "draft_skipped_ai_gate", messageId, {
-                reason: "ai_determined_no_reply_needed",
-                categories,
-            });
-        } else {
-
         // ── Thread deduplication guard ──────────────────────────────────────
         // If this thread already has a draft (pending or otherwise), don't
         // create another one. This is the last line of defence against loops
@@ -288,7 +276,6 @@ export async function processSingleEmail(
             console.error(`[ingest]   Error code:    ${draftErr?.code}`);
             console.error(`[ingest]   Full error:`, draftErr);
         }
-        } // end draftNeeded block
     }
 
     // Bust the Redis email list cache so the next UI fetch reflects this email.

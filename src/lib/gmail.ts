@@ -370,7 +370,7 @@ export async function createGmailDraft(
 // Every color MUST be in Gmail's allowed palette — any other hex is rejected.
 // Full palette: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
 const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string }> = {
-    important:    { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
+    priority:     { backgroundColor: "#fb4c2f", textColor: "#ffffff" }, // red
     follow_up:    { backgroundColor: "#285bac", textColor: "#ffffff" }, // dark blue
     scheduled:    { backgroundColor: "#16a765", textColor: "#ffffff" }, // green
     finance:      { backgroundColor: "#0b804b", textColor: "#ffffff" }, // dark green
@@ -380,11 +380,11 @@ const LABEL_COLORS: Record<string, { backgroundColor: string; textColor: string 
 };
 
 // Maps internal category keys to Gmail label display names.
-// "important" → "Priority" and "scheduled" → "Planned" to avoid conflicts
+// "priority" → "Priority" and "scheduled" → "Planned" to avoid conflicts
 // with Gmail's built-in system labels ("IMPORTANT", "SCHEDULED") which
 // cause a 409 when you try to create a user label with the same name.
 const CATEGORY_LABEL_NAMES: Record<string, string> = {
-    important:    "Priority",
+    priority:     "Priority",
     follow_up:    "Follow Up",
     scheduled:    "Planned",
     finance:      "Finance",

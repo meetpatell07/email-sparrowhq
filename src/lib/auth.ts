@@ -63,7 +63,7 @@ export const auth = betterAuth({
     account: {
         accountLinking: {
             enabled: true,
-            trustedProviders: ["google"],
+            trustedProviders: ["google", "microsoft"],
         },
     },
     socialProviders: {
@@ -90,6 +90,24 @@ export const auth = betterAuth({
                     response_type: "code"
                 }
             }
+        },
+        microsoft: {
+            clientId: process.env.MICROSOFT_CLIENT_ID!,
+            clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+            tenantId: process.env.MICROSOFT_TENANT_ID ?? "common",
+            scope: [
+                "openid",
+                "email",
+                "profile",
+                "offline_access",
+                "Mail.Read",
+                "Mail.ReadWrite",
+                "Mail.Send",
+                "Calendars.Read",
+                "Calendars.ReadWrite",
+                "Files.Read",
+                "Files.ReadWrite",
+            ],
         },
     },
     // We might need hooks to encrypt the refresh token if Better Auth doesn't support it natively.

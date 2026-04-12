@@ -10,7 +10,7 @@ const CATEGORY_GROUPS = [
         description: "What the email requires from you",
         items: [
             {
-                key: "important",
+                key: "priority",
                 label: "Priority",
                 gmailLabel: "Priority",
                 dot: "#fb4c2f",

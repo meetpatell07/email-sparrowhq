@@ -53,7 +53,7 @@ export function EmailRow({ email }: EmailRowProps) {
         }
     }, [email]);
 
-    const isActionRequired = currentCategories.includes("important");
+    const isActionRequired = currentCategories.includes("priority");
     const name = parseSenderName(email.sender || "");
     const dateLabel = isToday(email.receivedAt)
         ? format(email.receivedAt, "h:mm a")

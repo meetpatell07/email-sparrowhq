@@ -43,3 +43,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+packages/video/
+packages/video/node_modules/
+packages/video/out/
+packages/video/dist/

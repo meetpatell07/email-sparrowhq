@@ -5,12 +5,12 @@ import type { CalendarEvent } from "./calendar";
  * Categories where calendar context meaningfully improves a draft reply.
  *
  * - "scheduled": email is explicitly about meetings/events — include full 7-day view
- * - "important" / "follow_up": may reference scheduling — include today's availability only
+ * - "priority" / "follow_up": may reference scheduling — include today's availability only
  *
  * "finance", "personal", "notification", "marketing" never need calendar context,
  * so we skip the API call entirely for those.
  */
-const CALENDAR_RELEVANT = new Set(["scheduled", "important", "follow_up"]);
+const CALENDAR_RELEVANT = new Set(["scheduled", "priority", "follow_up"]);
 
 /**
  * Builds a rich, AI-ready calendar context string for use in draft generation.
@@ -33,7 +33,7 @@ export async function getCalendarContextForDraft(
 
     // "scheduled" emails (meeting requests, calendar invites) need the full
     // 7-day window so the AI can suggest concrete alternative dates.
-    // For "important"/"follow_up" we only need today's availability.
+    // For "priority"/"follow_up" we only need today's availability.
     const includeWeek = categories.includes("scheduled");
 
     try {

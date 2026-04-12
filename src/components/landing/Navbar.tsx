@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Menu01Icon, Sun01Icon, Moon01Icon } from "@hugeicons/core-free-icons";
 import { SparrowMark } from "./Logo";
+import { signIn } from "@/lib/auth-client";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -17,6 +19,17 @@ const navLinks = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const router = useRouter();
+
+  const handleConnectGoogle = async () => {
+    setConnectingGoogle(true);
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    } catch {
+      setConnectingGoogle(false);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("lp-theme");
@@ -80,25 +93,41 @@ export function Navbar() {
               <HugeiconsIcon icon={isDark ? Sun01Icon : Moon01Icon} size={17} />
             </button>
 
-            <Link
-              href="/login"
-              className="hidden md:inline-flex items-center text-[14px] font-body font-medium px-4 py-1.5 rounded-lg transition-opacity hover:opacity-70"
-              style={{ color: "var(--lp-text-secondary)" }}
-            >
-              Log in
-            </Link>
-
-            <Link
-              href="/login"
-              className="hidden md:inline-flex items-center gap-1.5 text-[14px] font-body font-semibold px-4 py-1.5 rounded-lg border transition-opacity hover:opacity-80"
+            <button
+              onClick={handleConnectGoogle}
+              disabled={connectingGoogle}
+              className="hidden md:inline-flex items-center gap-2 text-[13px] font-body font-semibold px-3.5 py-1.5 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 color: "var(--lp-text-primary)",
                 borderColor: "var(--lp-border)",
                 background: "var(--lp-surface-raised)",
               }}
             >
-              Get started free
-            </Link>
+              <svg className="w-[14px] h-[14px] shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              {connectingGoogle ? "Connecting…" : "Connect to Gmail"}
+            </button>
+
+            <button
+              onClick={() => router.push("/outlook-coming-soon")}
+              className="hidden md:inline-flex items-center gap-2 text-[13px] font-body font-semibold px-3.5 py-1.5 rounded-lg transition-opacity hover:opacity-80"
+              style={{
+                background: "#0078d4",
+                color: "#ffffff",
+              }}
+            >
+              <svg className="w-[14px] h-[14px] shrink-0" viewBox="0 0 23 23" fill="none">
+                <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+                <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
+                <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
+                <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+              </svg>
+              Connect to Outlook
+            </button>
 
             {/* Mobile hamburger */}
             <button
@@ -152,26 +181,40 @@ export function Navbar() {
               ))}
             </nav>
             <div className="mt-auto flex flex-col gap-3">
-              <a
-                href="/login"
-                className="text-center py-3 rounded-xl border font-body font-medium text-[15px]"
+              <button
+                onClick={() => { setMobileOpen(false); handleConnectGoogle(); }}
+                disabled={connectingGoogle}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border font-body font-medium text-[15px] disabled:opacity-50"
                 style={{
                   borderColor: "var(--lp-border)",
                   color: "var(--lp-text-primary)",
+                  background: "var(--lp-surface-raised)",
                 }}
               >
-                Log in
-              </a>
-              <a
-                href="/login"
-                className="text-center py-3 rounded-xl font-body font-medium text-[15px]"
+                <svg className="w-[16px] h-[16px] shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                {connectingGoogle ? "Connecting…" : "Connect to Gmail"}
+              </button>
+              <button
+                onClick={() => { setMobileOpen(false); router.push("/outlook-coming-soon"); }}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl font-body font-medium text-[15px]"
                 style={{
-                  background: "var(--lp-accent)",
-                  color: "var(--lp-accent-fg)",
+                  background: "#0078d4",
+                  color: "#ffffff",
                 }}
               >
-                Get started free
-              </a>
+                <svg className="w-[16px] h-[16px] shrink-0" viewBox="0 0 23 23" fill="none">
+                  <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+                  <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
+                  <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
+                  <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+                </svg>
+                Connect to Outlook
+              </button>
             </div>
           </motion.div>
         )}

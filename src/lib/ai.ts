@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const VALID_CATEGORIES = [
-    "important", "follow_up", "scheduled",
+    "priority", "follow_up", "scheduled",
     "finance", "personal",
     "notification", "marketing",
 ] as const;
@@ -73,7 +73,7 @@ export async function classifyEmail(subject: string, snippet: string, body?: str
 ## Categories
 
 Action categories (what the user needs to do):
-- important: Email requires a reply or action from the user (includes drafting AI replies)
+- priority: Email requires a reply or action from the user (includes drafting AI replies)
 - follow_up: User has likely already replied and is waiting for a response (includes drafting AI replies)
 - scheduled: Email is about meetings, calendar events, or scheduling
 
@@ -90,6 +90,7 @@ Passive categories (low priority):
 - Always return exactly one category (the best match).
 - Only use the exact category keys listed above.
 
+Valid keys: priority, follow_up, scheduled, finance, personal, notification, marketing
 Return ONLY: { "categories": ["category1"] }
 
 Email Content:
