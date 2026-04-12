@@ -101,7 +101,7 @@ export default function LoginPage() {
                     {/* Google */}
                     <button
                         onClick={handleGoogleLogin}
-                        disabled={loadingGoogle || loadingMicrosoft}
+                        disabled={loadingGoogle}
                         className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-lg font-body font-medium text-[14px] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
                         style={{ background: "#f0efe9", color: "#0a0a0a" }}
                     >
