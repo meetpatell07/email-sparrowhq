@@ -1,21 +1,25 @@
 "use client";
 
-import { signIn } from "@/lib/auth-client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SparrowMark } from "@/components/landing/Logo";
+import { beginGoogleSignIn, type GoogleSignInAttempt } from "@/lib/google-oauth";
+import { InAppBrowserNotice } from "@/components/InAppBrowserNotice";
 
 export default function LoginPage() {
     const [loadingGoogle, setLoadingGoogle] = useState(false);
+    const [googleAttempt, setGoogleAttempt] = useState<GoogleSignInAttempt | null>(null);
     const router = useRouter();
 
     const handleGoogleLogin = async () => {
         setLoadingGoogle(true);
         try {
-            await signIn.social({
-                provider: "google",
-                callbackURL: "/dashboard",
-            });
+            const attempt = await beginGoogleSignIn("/dashboard");
+            setGoogleAttempt(attempt);
+
+            if (!attempt.ok) {
+                setLoadingGoogle(false);
+            }
         } catch (error) {
             console.error("Google login failed:", error);
             setLoadingGoogle(false);
@@ -97,6 +101,15 @@ export default function LoginPage() {
                     >
                         Connect your email account to get started with EmailHQ.
                     </p>
+
+                    {!googleAttempt?.ok && googleAttempt?.reason === "in_app_browser" && (
+                        <InAppBrowserNotice
+                            browser={googleAttempt.browser}
+                            externalUrl={googleAttempt.externalUrl}
+                            androidIntentUrl={googleAttempt.androidIntentUrl}
+                            className="mb-4 rounded-xl p-4"
+                        />
+                    )}
 
                     {/* Google */}
                     <button
