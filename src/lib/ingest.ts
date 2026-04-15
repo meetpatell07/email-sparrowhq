@@ -124,6 +124,77 @@ export async function processSingleEmail(
     }).returning({ id: emails.id }).onConflictDoNothing();
 
     if (!emailRecord) {
+        // Email already in DB — check if it's a draft-eligible email that never got one.
+        // This handles emails that were ingested before draft creation was working,
+        // or before 'scheduled' was added to the eligible categories.
+        const [existingEmail] = await db.select({ id: emails.id, categories: emails.categories })
+            .from(emails)
+            .where(eq(emails.gmailId, messageId))
+            .limit(1);
+
+        if (!existingEmail?.categories?.length) return null;
+
+        const existingCategories = existingEmail.categories;
+        const needsBackfill =
+            existingCategories.includes('priority') ||
+            existingCategories.includes('follow_up') ||
+            existingCategories.includes('scheduled');
+
+        if (!needsBackfill) return null;
+
+        // Skip if a draft already exists for this thread
+        const backfillThreadId = fullMsg.data.threadId;
+        const [alreadyHasDraft] = backfillThreadId
+            ? await db.select({ id: drafts.id })
+                .from(drafts)
+                .innerJoin(emails, eq(drafts.emailId, emails.id))
+                .where(and(eq(emails.threadId, backfillThreadId), eq(emails.userId, userId)))
+                .limit(1)
+            : [undefined];
+
+        if (alreadyHasDraft) return null;
+
+        // Use the Gmail data already fetched at the top to create the missing draft
+        try {
+            const { getCalendarContextForDraft } = await import("@/lib/calendar-context");
+            const calendarContext = await getCalendarContextForDraft(userId, existingCategories);
+
+            const userStyleSamples = await db.select({ content: styleSamples.content })
+                .from(styleSamples)
+                .where(eq(styleSamples.userId, userId))
+                .orderBy(desc(styleSamples.createdAt))
+                .limit(3);
+            const styleExamples = userStyleSamples.map(s => s.content);
+
+            const draftContent = await generateDraftReply(subject, body, from, userName, calendarContext, styleExamples);
+            const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
+
+            const gmailDraftId = await createGmailDraft(
+                userId,
+                from,
+                replySubject,
+                draftContent,
+                fullMsg.data.threadId || undefined,
+                userEmail ?? undefined
+            );
+
+            await db.insert(drafts).values({
+                emailId: existingEmail.id,
+                gmailDraftId,
+                status: 'pending_approval',
+            });
+
+            await logAudit(userId, "draft_created", messageId, {
+                categories: existingCategories,
+                gmailDraftId,
+                source: 'backfill',
+                usedStyleSamples: styleExamples.length,
+            });
+            console.log(`[ingest] ✓ Backfill draft created for existing email — gmailDraftId=${gmailDraftId}`);
+        } catch (backfillErr: any) {
+            console.error(`[ingest] ✗ Backfill draft FAILED for ${messageId}: ${backfillErr?.message}`);
+        }
+
         return null;
     }
 
@@ -207,11 +278,11 @@ export async function processSingleEmail(
         }
     }
 
-    // Auto-draft only for action categories: priority and follow_up.
-    // Scheduled is intentionally excluded — calendar events don't need a drafted reply.
+    // Auto-draft for action categories: priority, follow_up, and scheduled.
     const needsDraft =
         categories.includes('priority') ||
-        categories.includes('follow_up');
+        categories.includes('follow_up') ||
+        categories.includes('scheduled');
 
     if (needsDraft) {
         // ── Thread deduplication guard ──────────────────────────────────────

@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Menu01Icon, Sun01Icon, Moon01Icon } from "@hugeicons/core-free-icons";
 import { SparrowMark } from "./Logo";
-import { signIn } from "@/lib/auth-client";
+import { beginGoogleSignIn, type GoogleSignInAttempt } from "@/lib/google-oauth";
+import { InAppBrowserNotice } from "@/components/InAppBrowserNotice";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -18,25 +19,35 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+
+    const saved = window.localStorage.getItem("lp-theme");
+    return saved ? saved === "dark" : true;
+  });
   const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [googleAttempt, setGoogleAttempt] = useState<GoogleSignInAttempt | null>(null);
   const router = useRouter();
 
   const handleConnectGoogle = async () => {
     setConnectingGoogle(true);
     try {
-      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+      const attempt = await beginGoogleSignIn("/dashboard");
+      setGoogleAttempt(attempt);
+
+      if (!attempt.ok) {
+        setConnectingGoogle(false);
+      }
     } catch {
       setConnectingGoogle(false);
     }
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("lp-theme");
-    const dark = saved ? saved === "dark" : true;
-    setIsDark(dark);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  }, []);
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
   const toggleTheme = () => {
     const next = !isDark;
@@ -141,6 +152,17 @@ export function Navbar() {
           </div>
         </div>
       </header>
+
+      {!googleAttempt?.ok && googleAttempt?.reason === "in_app_browser" && (
+        <div className="fixed inset-x-4 top-20 z-[55] mx-auto w-full max-w-screen-md pointer-events-none">
+          <InAppBrowserNotice
+            browser={googleAttempt.browser}
+            externalUrl={googleAttempt.externalUrl}
+            androidIntentUrl={googleAttempt.androidIntentUrl}
+            className="pointer-events-auto rounded-2xl p-4 shadow-lg"
+          />
+        </div>
+      )}
 
       {/* Mobile overlay */}
       <AnimatePresence>

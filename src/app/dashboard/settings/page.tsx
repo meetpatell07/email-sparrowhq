@@ -18,6 +18,8 @@ import { RefreshCw } from "lucide-react";
 import { disconnectGmail } from "@/app/actions";
 import { formatDistanceToNow, isPast } from "date-fns";
 import { useState } from "react";
+import { beginGoogleSignIn, type GoogleSignInAttempt } from "@/lib/google-oauth";
+import { InAppBrowserNotice } from "@/components/InAppBrowserNotice";
 
 interface Connection {
     id: string;
@@ -233,13 +235,16 @@ export default function SettingsPage() {
     );
 
     const [reconnecting, setReconnecting] = useState<string | null>(null);
+    const [googleAttempt, setGoogleAttempt] = useState<GoogleSignInAttempt | null>(null);
 
     const handleReconnect = async (connId: string) => {
         setReconnecting(connId);
-        await authClient.signIn.social({
-            provider: "google",
-            callbackURL: "/dashboard/settings",
-        });
+        const attempt = await beginGoogleSignIn("/dashboard/settings");
+        setGoogleAttempt(attempt);
+
+        if (!attempt.ok) {
+            setReconnecting(null);
+        }
     };
 
     const googleConnections = (data?.connections ?? []).filter(
@@ -250,6 +255,14 @@ export default function SettingsPage() {
         <DashboardLayout>
             <div className="min-h-full pb-20">
                 <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+                    {!googleAttempt?.ok && googleAttempt?.reason === "in_app_browser" && (
+                        <InAppBrowserNotice
+                            browser={googleAttempt.browser}
+                            externalUrl={googleAttempt.externalUrl}
+                            androidIntentUrl={googleAttempt.androidIntentUrl}
+                            className="rounded-2xl p-4"
+                        />
+                    )}
 
                     {/* ── Profile ─────────────────────────────────────────── */}
                     <section>
