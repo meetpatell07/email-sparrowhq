@@ -135,7 +135,7 @@ function FilePanel({
                 initial={{ x: "100%", opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: "100%", opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+                transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] as const }}
                 className={[
                     "fixed right-0 top-0 h-full w-[min(320px,100vw)] z-50 md:z-auto",
                     "md:relative md:w-[320px] md:h-auto",

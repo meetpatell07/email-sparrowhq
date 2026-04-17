@@ -141,7 +141,7 @@ const faqs = [
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
 const beforeRows = [
@@ -577,7 +577,7 @@ export function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const, delay: 0.15 }}
               style={{ y: heroCardY, rotate: heroCardRotate, scale: heroCardScale }}
               className="relative mt-14 origin-top md:mt-16"
             >
