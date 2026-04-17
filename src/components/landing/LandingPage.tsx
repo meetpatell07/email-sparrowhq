@@ -11,10 +11,8 @@ import {
   CheckmarkCircle02Icon,
   CustomerSupportIcon,
   DashboardBrowsingIcon,
-  File01Icon,
   GoogleDriveIcon,
   Invoice01Icon,
-  Mail02Icon,
   Mail01Icon,
   Menu01Icon,
   Moon02Icon,
@@ -144,32 +142,37 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
-const beforeRows = [
-  { sender: "Unread sender", subject: "Untitled thread preview", tag: "Inbox", time: "09:12" },
-  { sender: "Unknown contact", subject: "Follow-up requested in thread", tag: "New", time: "08:47" },
-  { sender: "Ops queue", subject: "Document shared for approval", tag: "Docs", time: "08:02" },
-  { sender: "Billing team", subject: "Invoice needs review today", tag: "Finance", time: "07:31" },
+const gmailCategories = [
+  { label: "Primary", badge: null, preview: "" },
+  { label: "Promotions", badge: "7 new", preview: "hidden promotional preview" },
+  { label: "Social", badge: "1 new", preview: "hidden social preview" },
+  { label: "Updates", badge: "30 new", preview: "hidden update preview" },
 ];
 
-const afterRows = [
-  { sender: "Priority lane", subject: "Meeting response drafted with calendar context", tag: "Draft ready", time: "2 actions" },
-  { sender: "Finance lane", subject: "Invoice extracted and filed into vault", tag: "Processed", time: "Vendor tagged" },
-  { sender: "Follow-up lane", subject: "Waiting on reply, reminder scheduled", tag: "Tracked", time: "Tomorrow" },
-  { sender: "Archive lane", subject: "Low-signal thread summarized and tucked away", tag: "Cleared", time: "Done" },
+const gmailLabels = [
+  { label: "Finance", count: "1", color: "#1a8f5a" },
+  { label: "Follow Up", count: "1", color: "#3065c8" },
+  { label: "Marketing", count: "9", color: "#b23a1f" },
+  { label: "Notes", count: "", color: "#505050" },
+  { label: "Notification", count: "8", color: "#f4ab45" },
+  { label: "Personal", count: "2", color: "#8d63d5" },
+  { label: "Planned", count: "", color: "#3ca86d" },
+  { label: "Priority", count: "", color: "#f16143" },
 ];
 
-const beforeCategories = [
-  { label: "Primary", count: "18", active: true },
-  { label: "Promotions", count: "7", active: false },
-  { label: "Social", count: "4", active: false },
-  { label: "Updates", count: "12", active: false },
-];
-
-const afterCategories = [
-  { label: "Primary", count: "6", active: true },
-  { label: "Promotions", count: "2", active: false },
-  { label: "Social", count: "1", active: false },
-  { label: "Updates", count: "3", active: false },
+const gmailRows = [
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Marketing", tagColor: "#b23a1f", selected: true, attachment: false, actionOpen: true },
+  { tag: "Marketing", tagColor: "#b23a1f", selected: false, attachment: false, actionOpen: false },
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Notification", tagColor: "#f4aa42", selected: false, attachment: false, actionOpen: false },
+  { tag: "Follow Up", tagColor: "#3065c8", selected: true, attachment: false, actionOpen: false },
+  { tag: "Follow Up", tagColor: "#3065c8", selected: false, attachment: false, actionOpen: false },
+  { tag: "Finance", tagColor: "#1a8f5a", selected: false, attachment: true, actionOpen: false },
+  { tag: "Follow Up", tagColor: "#3065c8", selected: true, attachment: false, actionOpen: false },
 ];
 
 function GlowButton({
@@ -211,146 +214,187 @@ function GlowButton({
   );
 }
 
-function InboxPreview({
-  title,
-  eyebrow,
-  rows,
-  categories,
-  after = false,
-}: {
-  title: string;
-  eyebrow: string;
-  rows: Array<{ sender: string; subject: string; tag: string; time: string }>;
-  categories: Array<{ label: string; count: string; active: boolean }>;
-  after?: boolean;
-}) {
+function GmailDashboardMock() {
   return (
-    <div className="rounded-[1.7rem] border border-[var(--lp-border)] bg-[var(--lp-surface-raised)]/95 p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-      <div className="overflow-hidden rounded-[1.35rem] border border-[var(--lp-border-subtle)] bg-[var(--lp-surface-raised)]">
-        <div className="flex items-center justify-between border-b border-[var(--lp-border-subtle)] px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-[#ea4335]/15" />
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--lp-text-muted)]">
-                {eyebrow}
-              </p>
-              <p className="text-xs font-semibold text-[var(--lp-text-primary)]">{title}</p>
+    <div className="rounded-[1.8rem] border border-[var(--lp-border)] bg-[#eef3fb] p-3 shadow-[0_20px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-[#221816]">
+      <div className="overflow-hidden rounded-[1.45rem] border border-black/6 bg-[#f8fafd] shadow-[0_8px_30px_rgba(31,41,55,0.08)] dark:border-white/8 dark:bg-[#1f1614]">
+        <div className="flex items-center justify-between gap-4 border-b border-black/6 px-4 py-3 dark:border-white/8">
+          <div className="flex min-w-0 items-center gap-3">
+            <HugeiconsIcon icon={Menu01Icon} size={18} className="shrink-0 text-[#4b5563] dark:text-[#d7c0b0]" />
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 grid-cols-2 gap-[2px] rounded-[8px] bg-white p-1 shadow-sm dark:bg-[#2a1e1a]">
+                <span className="rounded-sm bg-[#ea4335]" />
+                <span className="rounded-sm bg-[#fbbc05]" />
+                <span className="rounded-sm bg-[#4285f4]" />
+                <span className="rounded-sm bg-[#34a853]" />
+              </div>
+              <span className="text-[2rem] font-medium tracking-[-0.04em] text-[#4b5563] dark:text-[#f6e9dd]">Gmail</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[var(--lp-text-muted)]">
-            <HugeiconsIcon icon={Search01Icon} size={14} />
-            <div className="h-7 w-20 rounded-full bg-black/6" />
+          <div className="hidden flex-1 items-center justify-center lg:flex">
+            <div className="flex w-full max-w-[36rem] items-center gap-3 rounded-full bg-[#e9effa] px-5 py-3 text-[#5f6368] dark:bg-[#2a211d] dark:text-[#e6d2c3]">
+              <HugeiconsIcon icon={Search01Icon} size={18} />
+              <span className="text-lg">Search mail</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-[#4b5563] dark:text-[#d7c0b0]">
+            <div className="hidden rounded-full bg-[#d8e5fb] px-5 py-2 text-sm font-semibold text-[#173860] md:block dark:bg-[#3b2a24] dark:text-[#ffe7d2]">
+              Upgrade
+            </div>
+            <div className="h-8 w-8 rounded-full border border-black/8 bg-white dark:border-white/10 dark:bg-[#2a1e1a]" />
           </div>
         </div>
 
-        <div className="grid min-h-[290px] grid-cols-[96px_1fr] bg-[#f5f7fb] dark:bg-[#1d1614]">
-          <div className="border-r border-[var(--lp-border-subtle)] bg-[#eef3fd] px-2 py-3 dark:bg-[#221917]">
-            <div className="mb-3 rounded-2xl bg-[#c9ddff] px-2 py-2 text-center text-[10px] font-semibold text-[#173860] dark:bg-[#3b2a24] dark:text-[#f7d2b3]">
-              Compose
+        <div className="grid min-h-[36rem] grid-cols-[15rem_1fr_2.5rem] bg-[#f8fafd] dark:bg-[#1f1614]">
+          <div className="border-r border-black/6 px-4 py-4 dark:border-white/8">
+            <div className="mb-8 inline-flex w-full items-center gap-3 rounded-[1.4rem] bg-[#c9e4fb] px-5 py-5 text-[#0f172a] dark:bg-[#3b2a24] dark:text-[#ffe7d2]">
+              <div className="h-6 w-6 rounded-[6px] border-[3px] border-current border-r-transparent rotate-45" />
+              <span className="text-[1rem] font-medium">Compose</span>
             </div>
-            <div className="space-y-2 text-[10px] text-[var(--lp-text-secondary)]">
-              {["Inbox", "Starred", "Snoozed", "Sent", "Drafts"].map((item, index) => (
+
+            <div className="space-y-2 text-[0.98rem] text-[#4b5563] dark:text-[#dcc7b8]">
+              {[
+                ["Inbox", "18,676", true],
+                ["Starred", "", false],
+                ["Snoozed", "", false],
+                ["Sent", "", false],
+                ["Drafts", "96", false],
+                ["Purchases", "512", false],
+                ["More", "", false],
+              ].map(([label, count, active]) => (
                 <div
-                  key={item}
-                  className={`rounded-xl px-2 py-1.5 ${
-                    index === 0 ? "bg-[#d8e4fb] font-semibold text-[#1a3d6f] dark:bg-[#352722] dark:text-[#fff1e6]" : ""
+                  key={label}
+                  className={`flex items-center justify-between rounded-r-full px-4 py-2.5 ${
+                    active ? "bg-[#d8e5fb] font-semibold text-[#173860] dark:bg-[#352722] dark:text-[#fff0e4]" : ""
                   }`}
                 >
-                  {item}
+                  <span>{label}</span>
+                  {count ? <span>{count}</span> : null}
                 </div>
               ))}
             </div>
-            <div className="mt-4 space-y-2">
-              {["Priority", "Finance", "Follow Up", "Personal"].map((item) => (
-                <div key={item} className="flex items-center gap-1.5 text-[9px] text-[var(--lp-text-muted)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--lp-accent)]/75" />
-                  {item}
+
+            <div className="mt-8">
+              <div className="mb-4 flex items-center justify-between text-[1rem] font-medium text-[#40464d] dark:text-[#f6e9dd]">
+                <span>Labels</span>
+                <span className="text-2xl font-light">+</span>
+              </div>
+              <div className="space-y-2.5 text-[0.98rem] text-[#4b5563] dark:text-[#dcc7b8]">
+                {gmailLabels.map((item) => (
+                  <div key={item.label} className="flex items-center justify-between gap-3 px-3">
+                    <div className="flex items-center gap-3">
+                      <span className="h-3.5 w-5 rounded-r-full" style={{ backgroundColor: item.color }} />
+                      <span>{item.label}</span>
+                    </div>
+                    <span>{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#201715]">
+            <div className="flex items-center justify-between px-6 py-5 text-[#5f6368] dark:text-[#dcc7b8]">
+              <div className="flex items-center gap-5 text-xl">
+                <div className="h-7 w-7 rounded-[4px] border-[3px] border-current" />
+                <span className="text-3xl leading-none">↻</span>
+                <span className="text-3xl leading-none">⋮</span>
+              </div>
+              <div className="flex items-center gap-6 text-[1rem]">
+                <span>1–50 of 22,922</span>
+                <span className="text-2xl leading-none">‹</span>
+                <span className="text-2xl leading-none">›</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 border-b border-black/8 dark:border-white/8">
+              {gmailCategories.map((item, index) => (
+                <div key={item.label} className={`px-8 py-4 ${index === 0 ? "border-b-[3px] border-[#3065c8]" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[1.15rem] ${index === 0 ? "font-medium text-[#3065c8]" : "text-[#4b5563] dark:text-[#e1d0c2]"}`}>
+                      {item.label}
+                    </span>
+                    {item.badge ? (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[0.82rem] font-semibold text-white ${
+                          item.label === "Promotions"
+                            ? "bg-[#2d8f4e]"
+                            : item.label === "Social"
+                              ? "bg-[#3175e7]"
+                              : "bg-[#df7b1b]"
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                  {item.preview ? <div className="mt-1 h-4 w-40 rounded-full bg-black/8 blur-[1px] dark:bg-white/10" /> : null}
+                </div>
+              ))}
+            </div>
+
+            <div>
+              {gmailRows.map((row, index) => (
+                <div
+                  key={`${row.tag}-${index}`}
+                  className={`border-b border-black/7 px-6 py-3.5 dark:border-white/7 ${
+                    row.selected ? "bg-[#f3f6fc] shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-[#2a1f1c]" : "bg-white dark:bg-[#201715]"
+                  }`}
+                >
+                  <div className="grid grid-cols-[2rem_2rem_13rem_7rem_1fr_5rem] items-center gap-3 text-[#202124] dark:text-[#f7ebdf]">
+                    <div className="h-6 w-6 rounded-[4px] border-2 border-[#c4c7c5] dark:border-[#8f776b]" />
+                    <div className="text-[#c4c7c5] dark:text-[#8f776b]">☆</div>
+                    <div className="h-5 w-32 rounded-full bg-black/10 blur-[1.6px] dark:bg-white/10" />
+                    <span
+                      className="inline-flex w-fit rounded-[8px] px-2 py-1 text-[0.9rem] font-medium text-white"
+                      style={{ backgroundColor: row.tagColor }}
+                    >
+                      {row.tag}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="h-5 w-[85%] rounded-full bg-black/10 blur-[1.8px] dark:bg-white/10" />
+                      {row.attachment ? (
+                        <div className="mt-3 flex items-center gap-2">
+                          <div className="rounded-full bg-[#f1f5f9] px-4 py-2 text-sm text-[#64748b] dark:bg-[#312521] dark:text-[#f4dcc8]">
+                            PDF
+                          </div>
+                          <div className="h-4 w-28 rounded-full bg-black/10 blur-[1.6px] dark:bg-white/10" />
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="text-right text-[1rem] font-medium text-[#3c4043] dark:text-[#f2dfd0]">
+                      {row.selected ? "4 Apr" : "••:••"}
+                    </div>
+                  </div>
+
+                  {row.actionOpen ? (
+                    <div className="mt-3 flex items-center justify-end gap-3 text-[#5f6368] dark:text-[#dcc7b8]">
+                      <div className="rounded-[10px] border border-black/10 px-3 py-1.5 text-sm dark:border-white/10">
+                        Unsubscribe
+                      </div>
+                      <div className="h-8 w-8 rounded-lg border border-black/10 dark:border-white/10" />
+                      <div className="h-8 w-8 rounded-lg border border-black/10 dark:border-white/10" />
+                      <div className="h-8 w-8 rounded-lg border border-black/10 dark:border-white/10" />
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="px-3 py-3">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="h-8 flex-1 rounded-full bg-white/85 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] dark:bg-white/5" />
-              <div className="h-8 w-8 rounded-full bg-white/80 dark:bg-white/5" />
-            </div>
-
-            <div className="mb-3 grid grid-cols-4 gap-2 text-[9px]">
-              {categories.map((item) => (
-                <div
-                  key={item.label}
-                  className={`rounded-xl px-2 py-1.5 ${
-                    item.active
-                      ? "bg-white shadow-[inset_0_-2px_0_0_var(--lp-accent)] dark:bg-[#241b18]"
-                      : "bg-white/60 dark:bg-white/5"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-medium text-[var(--lp-text-secondary)]">{item.label}</span>
-                    <span className="rounded-full bg-black/8 px-1.5 py-0.5 text-[8px] text-[var(--lp-text-muted)] dark:bg-white/8">
-                      {item.count}
-                    </span>
-                  </div>
-                </div>
+          <div className="border-l border-black/6 bg-[#f8fafd] px-2 py-10 dark:border-white/8 dark:bg-[#1f1614]">
+            <div className="space-y-8">
+              {["#4285f4", "#fbbc05", "#4285f4"].map((color, index) => (
+                <div key={`${color}-${index}`} className="mx-auto h-8 w-8 rounded-xl" style={{ backgroundColor: color }} />
               ))}
             </div>
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              {rows.map((row) => (
-                <div
-                  key={`${row.sender}-${row.time}`}
-                  className="grid grid-cols-[16px_76px_1fr_38px] items-center gap-2 rounded-xl bg-white/90 px-2 py-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.05)] dark:bg-[#261c19]"
-                >
-                  <HugeiconsIcon
-                    icon={Mail02Icon}
-                    size={12}
-                    className="text-[var(--lp-text-muted)]"
-                  />
-                  <div className="min-w-0">
-                    <div className={`h-2.5 rounded-full bg-black/10 dark:bg-white/10 ${after ? "w-16" : "w-16 blur-[1px]"}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${
-                          after
-                            ? "bg-[var(--lp-accent-soft)] text-[var(--lp-accent)]"
-                            : "bg-[#dbe5f7] text-[#35517f] dark:bg-[#3b2a24] dark:text-[#ffd9bb]"
-                        }`}
-                      >
-                        {row.tag}
-                      </span>
-                      <div className={`h-2.5 flex-1 rounded-full bg-black/10 dark:bg-white/10 ${after ? "w-40" : "blur-[1.5px]"}`} />
-                    </div>
-                    <div className={`mt-1.5 h-2 rounded-full bg-black/7 dark:bg-white/8 ${after ? "w-32" : "w-40 blur-[2px]"}`} />
-                  </div>
-                  <div className="text-right text-[8px] font-medium text-[var(--lp-text-muted)]">
-                    {after ? row.time : "••:••"}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {after && (
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {[
-                  { label: "Drafts", icon: Mail01Icon },
-                  { label: "Calendar", icon: Calendar03Icon },
-                  { label: "Vault", icon: File01Icon },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-xl bg-[var(--lp-accent-soft)] px-2 py-2 text-center text-[9px] font-medium text-[var(--lp-accent)]"
-                  >
-                    <div className="mb-1 flex justify-center">
-                      <HugeiconsIcon icon={item.icon} size={12} />
-                    </div>
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-            )}
+        <div className="flex items-center justify-between border-t border-black/6 bg-[#f8fafd] px-4 py-3 dark:border-white/8 dark:bg-[#1f1614]">
+          <div className="text-3xl leading-none text-[#5f6368] dark:text-[#dcc7b8]">+</div>
+          <div className="rounded-[1rem] bg-[#edf2fc] px-5 py-3 text-[1.2rem] text-[#233a5f] shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:bg-[#312521] dark:text-[#ffe7d2]">
+            Sharing Document: <span className="blur-[2px]">Sensitive file name</span>
           </div>
         </div>
       </div>
@@ -361,11 +405,11 @@ function InboxPreview({
 export function LandingPage() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") {
-      return true;
+      return false;
     }
 
     const saved = window.localStorage.getItem("lp-theme");
-    return saved ? saved === "dark" : true;
+    return saved ? saved === "dark" : false;
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
@@ -589,52 +633,19 @@ export function LandingPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--lp-text-muted)]">
-                      Dashboard transformation
+                      Gmail-style workspace
                     </p>
                     <p className="mt-1 text-sm font-medium text-[var(--lp-text-primary)]">
-                      Familiar inbox, privacy-safe product story
+                      Exact layout, with only sensitive thread data obscured
                     </p>
                   </div>
                   <div className="rounded-full bg-[var(--lp-accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--lp-accent)]">
-                    Before / after
+                    Privacy-safe mock
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-5 xl:grid-cols-2">
-                  <div className="relative">
-                    <div className="mb-2 flex items-center justify-between px-1">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--lp-text-muted)]">
-                        Before Sparrow
-                      </p>
-                      <p className="text-[11px] text-[var(--lp-text-secondary)]">
-                        crowded inbox, hidden signal
-                      </p>
-                    </div>
-                    <InboxPreview
-                      title="Generic inbox snapshot"
-                      eyebrow="Sanitized UI"
-                      rows={beforeRows}
-                      categories={beforeCategories}
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <div className="mb-2 flex items-center justify-between px-1">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--lp-text-muted)]">
-                        After Sparrow
-                      </p>
-                      <p className="text-[11px] text-[var(--lp-text-secondary)]">
-                        organized lanes, ready actions
-                      </p>
-                    </div>
-                    <InboxPreview
-                      title="Actioned inbox view"
-                      eyebrow="Sparrow overlay"
-                      rows={afterRows}
-                      categories={afterCategories}
-                      after
-                    />
-                  </div>
+                <div className="mt-6">
+                  <GmailDashboardMock />
                 </div>
               </div>
             </motion.div>
