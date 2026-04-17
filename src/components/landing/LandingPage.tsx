@@ -175,6 +175,16 @@ const gmailRows = [
   { tag: "Follow Up", tagColor: "#3065c8", selected: true, attachment: false, actionOpen: false },
 ];
 
+const gmailSidebarItems = [
+  { label: "Inbox", count: "18,676", active: true },
+  { label: "Starred", count: "", active: false },
+  { label: "Snoozed", count: "", active: false },
+  { label: "Sent", count: "", active: false },
+  { label: "Drafts", count: "96", active: false },
+  { label: "Purchases", count: "512", active: false },
+  { label: "More", count: "", active: false },
+];
+
 function GlowButton({
   href,
   children,
@@ -253,23 +263,15 @@ function GmailDashboardMock() {
             </div>
 
             <div className="space-y-2 text-[0.98rem] text-[#4b5563] dark:text-[#dcc7b8]">
-              {[
-                ["Inbox", "18,676", true],
-                ["Starred", "", false],
-                ["Snoozed", "", false],
-                ["Sent", "", false],
-                ["Drafts", "96", false],
-                ["Purchases", "512", false],
-                ["More", "", false],
-              ].map(([label, count, active]) => (
+              {gmailSidebarItems.map((item) => (
                 <div
-                  key={label}
+                  key={item.label}
                   className={`flex items-center justify-between rounded-r-full px-4 py-2.5 ${
-                    active ? "bg-[#d8e5fb] font-semibold text-[#173860] dark:bg-[#352722] dark:text-[#fff0e4]" : ""
+                    item.active ? "bg-[#d8e5fb] font-semibold text-[#173860] dark:bg-[#352722] dark:text-[#fff0e4]" : ""
                   }`}
                 >
-                  <span>{label}</span>
-                  {count ? <span>{count}</span> : null}
+                  <span>{item.label}</span>
+                  {item.count ? <span>{item.count}</span> : null}
                 </div>
               ))}
             </div>
