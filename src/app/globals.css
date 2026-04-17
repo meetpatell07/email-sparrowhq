@@ -6,43 +6,119 @@
 /* ─── Landing page design tokens ─── */
 :root {
   --lp-bg-primary:     #ffffff;
-  --lp-bg-secondary:   #f7f7f5;
-  --lp-bg-tertiary:    #f0efe9;
-  --lp-surface:        #ffffff;
-  --lp-surface-raised: #fafaf8;
-  --lp-border:         #e5e4df;
-  --lp-border-subtle:  #efefec;
-  --lp-text-primary:   #0d0d0d;
-  --lp-text-secondary: #4a4a4a;
-  --lp-text-muted:     #9a9a9a;
-  --lp-text-inverse:   #ffffff;
-  --lp-accent:         #0d0d0d;
-  --lp-accent-hover:   #2a2a2a;
-  --lp-accent-fg:      #ffffff;
-  --lp-glow:           rgba(0,0,0,0.06);
+  --lp-bg-secondary:   #f8f1e8;
+  --lp-bg-tertiary:    #efe4d6;
+  --lp-surface:        rgba(255,255,255,0.72);
+  --lp-surface-raised: rgba(255,255,255,0.92);
+  --lp-surface-glass:  rgba(255,255,255,0.7);
+  --lp-panel:          rgba(255,255,255,0.66);
+  --lp-border:         rgba(37,28,24,0.12);
+  --lp-border-subtle:  rgba(37,28,24,0.08);
+  --lp-text-primary:   #1f1712;
+  --lp-text-secondary: #5e4d42;
+  --lp-text-muted:     #8c7668;
+  --lp-text-inverse:   #fff8f0;
+  --lp-accent:         #f07622;
+  --lp-accent-hover:   #d96112;
+  --lp-accent-fg:      #fff8f0;
+  --lp-accent-soft:    rgba(240,118,34,0.12);
+  --lp-glow:           rgba(240,118,34,0.15);
 }
 
 [data-theme="dark"] {
-  --lp-bg-primary:     #0a0a0a;
-  --lp-bg-secondary:   #111111;
-  --lp-bg-tertiary:    #161616;
-  --lp-surface:        #141414;
-  --lp-surface-raised: #1c1c1c;
-  --lp-border:         #262626;
-  --lp-border-subtle:  #1e1e1e;
-  --lp-text-primary:   #f0efe9;
-  --lp-text-secondary: #a0a0a0;
-  --lp-text-muted:     #4a4a4a;
-  --lp-text-inverse:   #0a0a0a;
-  --lp-accent:         #f0efe9;
-  --lp-accent-hover:   #ffffff;
-  --lp-accent-fg:      #0a0a0a;
-  --lp-glow:           rgba(255,255,255,0.04);
+  --lp-bg-primary:     #160f0d;
+  --lp-bg-secondary:   #1e1412;
+  --lp-bg-tertiary:    #261a17;
+  --lp-surface:        rgba(34,23,20,0.76);
+  --lp-surface-raised: rgba(42,28,24,0.94);
+  --lp-surface-glass:  rgba(26,18,16,0.76);
+  --lp-panel:          rgba(255,255,255,0.035);
+  --lp-border:         rgba(255,240,231,0.1);
+  --lp-border-subtle:  rgba(255,240,231,0.06);
+  --lp-text-primary:   #fff6ef;
+  --lp-text-secondary: #d8c1b1;
+  --lp-text-muted:     #9f8778;
+  --lp-text-inverse:   #160f0d;
+  --lp-accent:         #ff9d4d;
+  --lp-accent-hover:   #ffb26c;
+  --lp-accent-fg:      #1c130f;
+  --lp-accent-soft:    rgba(255,157,77,0.14);
+  --lp-glow:           rgba(255,157,77,0.18);
 }
 
 /* ─── Landing page utilities ─── */
 .font-heading { font-family: var(--font-heading), system-ui, sans-serif; }
 .font-body    { font-family: var(--font-body),    system-ui, sans-serif; }
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 85%);
+}
+
+[data-theme="light"] .landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(31,23,18,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(31,23,18,0.06) 1px, transparent 1px);
+}
+
+.landing-noise {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12) 0, transparent 24%),
+    radial-gradient(circle at 80% 10%, rgba(255,157,77,0.1) 0, transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(255,255,255,0.08) 0, transparent 28%);
+}
+
+.landing-spotlight {
+  filter: blur(80px);
+  border-radius: 999px;
+}
+
+.landing-spotlight-one {
+  top: 8rem;
+  right: -6rem;
+  width: 22rem;
+  height: 22rem;
+  background: radial-gradient(circle, rgba(255,157,77,0.3) 0%, transparent 68%);
+}
+
+.landing-spotlight-two {
+  top: 32rem;
+  left: -8rem;
+  width: 26rem;
+  height: 26rem;
+  background: radial-gradient(circle, rgba(117,199,255,0.18) 0%, transparent 68%);
+}
+
+.landing-card-outline {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.22), transparent 40%),
+    linear-gradient(320deg, rgba(255,157,77,0.18), transparent 40%);
+  filter: blur(26px);
+  opacity: 0.65;
+}
+
+.landing-dashboard-shell {
+  position: relative;
+}
+
+.landing-dashboard-shell::before {
+  content: "";
+  position: absolute;
+  inset: 1.25rem 6% auto;
+  height: 9rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,157,77,0.16) 0%, transparent 72%);
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.landing-emphasis {
+  color: var(--lp-accent);
+  font-style: italic;
+}
 
 @keyframes ticker {
   from { transform: translateX(0); }
