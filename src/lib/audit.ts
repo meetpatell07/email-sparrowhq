@@ -10,7 +10,8 @@ export type AuditAction =
     | "invoice_extracted"
     | "label_applied"
     | "draft_approved"
-    | "draft_rejected";
+    | "draft_rejected"
+    | "email_marked_read";
 
 export async function logAudit(
     userId: string,

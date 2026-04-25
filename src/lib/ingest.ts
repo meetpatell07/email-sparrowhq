@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { user, account, emails, attachments, invoices, drafts, styleSamples } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { getGmailClient, createGmailDraft, applyGmailLabel } from "@/lib/gmail";
+import { getGmailClient, createGmailDraft, applyGmailLabel, markEmailAsRead } from "@/lib/gmail";
 import { classifyEmail, extractInvoiceData, generateDraftReply } from "@/lib/ai";
 import { logAudit } from "@/lib/audit";
 import { s3, R2_BUCKET_NAME } from "@/lib/s3";
@@ -257,6 +257,13 @@ export async function processSingleEmail(
     // Apply Gmail labels — must be awaited; fire-and-forget gets killed by serverless before it resolves
     await applyGmailLabel(userId, messageId, categories);
     await logAudit(userId, "label_applied", messageId, { categories });
+
+    // Auto-read low-signal categories — marketing, notification, and finance don't need user attention
+    const AUTO_READ_CATEGORIES = ['marketing', 'notification', 'finance'];
+    if (categories.some((c) => AUTO_READ_CATEGORIES.includes(c))) {
+        await markEmailAsRead(userId, messageId);
+        await logAudit(userId, "email_marked_read", messageId, { categories });
+    }
 
     // Invoice extraction
     if (categories.includes('finance')) {

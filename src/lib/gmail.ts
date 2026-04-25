@@ -365,6 +365,23 @@ export async function createGmailDraft(
     return response.data.id;
 }
 
+/**
+ * Removes the UNREAD label from a Gmail message, marking it as read.
+ */
+export async function markEmailAsRead(userId: string, messageId: string): Promise<void> {
+    try {
+        const gmail = await getGmailClient(userId);
+        await gmail.users.messages.modify({
+            userId: 'me',
+            id: messageId,
+            requestBody: { removeLabelIds: ['UNREAD'] },
+        });
+        console.log(`[gmail] ✓ Marked ${messageId} as read`);
+    } catch (err: any) {
+        console.error(`[gmail] ✗ Failed to mark ${messageId} as read: ${err?.message ?? err}`);
+    }
+}
+
 // ─── Gmail Label Management ─────────────────────────────────────────────────
 
 // Every color MUST be in Gmail's allowed palette — any other hex is rejected.
