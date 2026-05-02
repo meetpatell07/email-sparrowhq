@@ -11,7 +11,8 @@ export type AuditAction =
     | "label_applied"
     | "draft_approved"
     | "draft_rejected"
-    | "email_marked_read";
+    | "email_marked_read"
+    | "draft_failed";
 
 export async function logAudit(
     userId: string,

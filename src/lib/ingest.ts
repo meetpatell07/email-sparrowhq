@@ -353,6 +353,11 @@ export async function processSingleEmail(
             console.error(`[ingest]   Error message: ${draftErr?.message}`);
             console.error(`[ingest]   Error code:    ${draftErr?.code}`);
             console.error(`[ingest]   Full error:`, draftErr);
+            await logAudit(userId, "draft_failed", messageId, {
+                categories,
+                error: draftErr?.message ?? String(draftErr),
+                errorName: draftErr?.name,
+            });
         }
     }
 
