@@ -25,11 +25,13 @@ interface AuditEntry {
 const ACTION_CONFIG: Record<string, { label: string; icon: typeof SparklesIcon; color: string; bg: string }> = {
     email_classified:           { label: "Email classified",          icon: Tag01Icon,              color: "#6366f1", bg: "#6366f110" },
     draft_created:              { label: "Draft created",             icon: CheckmarkSquare01Icon,  color: "#059669", bg: "#05966910" },
+    draft_failed:               { label: "Draft failed",              icon: AlertCircleIcon,        color: "#DC2626", bg: "#DC262610" },
     draft_skipped_ai_gate:      { label: "Draft skipped — AI gate",   icon: AlertCircleIcon,        color: "#D97706", bg: "#D9770610" },
     draft_skipped_thread_exists:{ label: "Draft skipped — duplicate", icon: InformationCircleIcon,  color: "#78716C", bg: "#78716C10" },
     draft_skipped_self_sender:  { label: "Skipped — sent by you",     icon: InformationCircleIcon,  color: "#78716C", bg: "#78716C10" },
     invoice_extracted:          { label: "Invoice extracted",         icon: Invoice01Icon,          color: "#0284C7", bg: "#0284C710" },
     label_applied:              { label: "Label applied",             icon: Tag01Icon,              color: "#7C3AED", bg: "#7C3AED10" },
+    email_marked_read:          { label: "Marked as read",            icon: CheckmarkSquare01Icon,  color: "#78716C", bg: "#78716C10" },
     draft_approved:             { label: "Draft approved",            icon: CheckmarkSquare01Icon,  color: "#059669", bg: "#05966910" },
     draft_rejected:             { label: "Draft rejected",            icon: Cancel01Icon,           color: "#DC2626", bg: "#DC262610" },
 };
@@ -82,12 +84,16 @@ function MetadataBadges({ meta }: { meta: Record<string, unknown> | null }) {
 export function AuditLogTab() {
     const [logs, setLogs] = useState<AuditEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [forbidden, setForbidden] = useState(false);
     const [filter, setFilter] = useState<string>(ALL_FILTER);
 
     useEffect(() => {
         fetch("/api/audit?limit=100")
-            .then(r => r.json())
-            .then(data => setLogs(data.logs ?? []))
+            .then(async (r) => {
+                if (r.status === 403) { setForbidden(true); return; }
+                const data = await r.json();
+                setLogs(data.logs ?? []);
+            })
             .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
@@ -133,14 +139,22 @@ export function AuditLogTab() {
                 ))}
             </div>
 
-            {loading && (
+            {forbidden && (
+                <div className="flex flex-col items-center justify-center py-20 text-[#A8A29E]">
+                    <HugeiconsIcon icon={Cancel01Icon} size={32} className="mb-3 opacity-30" />
+                    <p className="text-[14px]">Access restricted.</p>
+                    <p className="text-[12px] mt-1">The Trust Log is only available to selected members.</p>
+                </div>
+            )}
+
+            {!forbidden && loading && (
                 <div className="flex flex-col items-center justify-center py-20 text-[#A8A29E]">
                     <div className="w-5 h-5 border-2 border-[#E7E5E4] border-t-[#1C1917] rounded-full animate-spin mb-3" />
                     <span className="text-[13px]">Loading…</span>
                 </div>
             )}
 
-            {!loading && visible.length === 0 && (
+            {!forbidden && !loading && visible.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-[#A8A29E]">
                     <HugeiconsIcon icon={SparklesIcon} size={32} className="mb-3 opacity-30" />
                     <p className="text-[14px]">No log entries yet.</p>
@@ -148,7 +162,7 @@ export function AuditLogTab() {
                 </div>
             )}
 
-            {!loading && visible.length > 0 && (
+            {!forbidden && !loading && visible.length > 0 && (
                 <div className="space-y-2">
                     {visible.map((entry) => {
                         const cfg = ACTION_CONFIG[entry.action] ?? {
@@ -193,7 +207,7 @@ export function AuditLogTab() {
                 </div>
             )}
 
-            {!loading && logs.length > 0 && (
+            {!forbidden && !loading && logs.length > 0 && (
                 <p className="text-center text-[11px] text-[#A8A29E] mt-6">
                     Showing {visible.length} of {logs.length} entries · Last 100 actions
                 </p>

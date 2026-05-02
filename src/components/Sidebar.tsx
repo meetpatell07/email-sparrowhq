@@ -19,13 +19,18 @@ import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 import { SparrowMark } from "@/components/landing/Logo";
 
-const mainNav = [
+const TRUST_LOG_EMAILS = new Set(
+    (process.env.NEXT_PUBLIC_TRUST_LOG_EMAILS ?? "meetpatel7026@gmail.com")
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+);
+
+const baseNav = [
     { name: "Overview",    icon: Home01Icon,           href: "/dashboard" },
     { name: "Categories",  icon: Tag01Icon,             href: "/dashboard/categories" },
     { name: "Vault",       icon: Archive01Icon,         href: "/dashboard/vault" },
     { name: "Drafts",      icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
     { name: "Drive",       icon: GoogleDriveIcon,       href: "/dashboard/drive" },
-    { name: "Trust Log",   icon: ListViewIcon,          href: "/dashboard/audit" },
 ];
 
 interface SidebarProps {
@@ -36,6 +41,13 @@ export function Sidebar({ onClose }: SidebarProps) {
     const pathname = usePathname();
     const { data: session } = authClient.useSession();
     const user = session?.user;
+
+    const mainNav = [
+        ...baseNav,
+        ...(user?.email && TRUST_LOG_EMAILS.has(user.email.toLowerCase())
+            ? [{ name: "Trust Log", icon: ListViewIcon, href: "/dashboard/audit" }]
+            : []),
+    ];
 
     return (
         <aside className="w-[240px] h-screen flex flex-col bg-white border-r border-[#E7E5E4] shrink-0">
