@@ -1,5 +1,5 @@
 /**
- * service_worker.js — SparrowHQ extension background service worker.
+ * service_worker.js — EmailHQ extension background service worker.
  * Handles install events, context menu registration, and message relay.
  */
 
@@ -22,7 +22,7 @@ chrome.runtime.onStartup.addListener(registerContextMenu);
 function registerContextMenu() {
     chrome.contextMenus.removeAll(() => {
         chrome.contextMenus.create({
-            id: "sparrowhq-draft-selection",
+            id: "emailhq-draft-selection",
             title: "Draft email from selection",
             contexts: ["selection"],
         });
@@ -30,7 +30,7 @@ function registerContextMenu() {
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId !== "sparrowhq-draft-selection") return;
+    if (info.menuItemId !== "emailhq-draft-selection") return;
     if (!tab?.id) return;
 
     const selectedText = info.selectionText ?? "";

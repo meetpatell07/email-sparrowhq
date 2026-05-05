@@ -13,7 +13,7 @@ export function SparrowMark({ size = 32, color = "currentColor", className }: Lo
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="SparrowHQ"
+      aria-label="EmailHQ"
     >
       {/* Main body — sweeping curve of the bird in flight */}
       <path
@@ -35,7 +35,7 @@ export function SparrowMark({ size = 32, color = "currentColor", className }: Lo
 export function SparrowWordmark({ color = "currentColor", className }: { color?: string; className?: string }) {
   return (
     <span className={className} style={{ color, fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "17px", letterSpacing: "-0.01em" }}>
-      SparrowHQ
+      EmailHQ
     </span>
   );
 }

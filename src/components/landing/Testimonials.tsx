@@ -10,7 +10,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const testimonials = [
   {
-    quote: "I used to spend 45 minutes every morning triaging my inbox. Now I open SparrowHQ, review the AI's draft replies, hit approve, and I'm done in 10.",
+    quote: "I used to spend 45 minutes every morning triaging my inbox. Now I open EmailHQ, review the AI's draft replies, hit approve, and I'm done in 10.",
     name: "Sarah K.",
     title: "Founder, Meridian Studio",
   },

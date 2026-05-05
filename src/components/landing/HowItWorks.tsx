@@ -15,7 +15,7 @@ const steps = [
     number: "01",
     title: "Connect your inbox",
     description:
-      "Sign in once with Google and SparrowHQ syncs your Gmail instantly — no forwarding rules, no plugins, no scripts. Your inbox is live in under 30 seconds.",
+      "Sign in once with Google and EmailHQ syncs your Gmail instantly — no forwarding rules, no plugins, no scripts. Your inbox is live in under 30 seconds.",
     accent: "#6366f1",
     tag: "One-click OAuth",
   },
@@ -31,7 +31,7 @@ const steps = [
     number: "03",
     title: "Drafts appear, ready to approve",
     description:
-      "For urgent and client emails, SparrowHQ writes a context-aware reply — it even checks your calendar for free slots. One click to approve, one click to send.",
+      "For urgent and client emails, EmailHQ writes a context-aware reply — it even checks your calendar for free slots. One click to approve, one click to send.",
     accent: "#059669",
     tag: "Calendar-aware AI replies",
   },
@@ -56,7 +56,7 @@ function VisualConnect() {
       <div className="flex items-center gap-2.5">
         <SparrowMark size={22} color="var(--lp-text-primary)" />
         <span className="font-heading font-bold text-[14px]" style={{ color: "var(--lp-text-primary)" }}>
-          SparrowHQ
+          EmailHQ
         </span>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />

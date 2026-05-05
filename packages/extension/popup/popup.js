@@ -1,12 +1,12 @@
 /**
- * popup.js — SparrowHQ Chrome extension popup logic.
+ * popup.js — EmailHQ Chrome extension popup logic.
  *
- * For local development, change SPARROWHQ_API_URL to your dev server:
- *   const SPARROWHQ_API_URL = "http://localhost:3000";
+ * For local development, change EMAILHQ_API_URL to your dev server:
+ *   const EMAILHQ_API_URL = "http://localhost:3000";
  */
 
-const SPARROWHQ_API_URL = "https://email.sparrowhq.co";
-// const SPARROWHQ_API_URL = "http://localhost:3000";
+const EMAILHQ_API_URL = "https://email.sparrowhq.co";
+// const EMAILHQ_API_URL = "http://localhost:3000";
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ async function checkSession() {
     const cached = await getCachedSession();
     if (cached) return cached;
 
-    const res = await fetch(`${SPARROWHQ_API_URL}/api/ext/session`, {
+    const res = await fetch(`${EMAILHQ_API_URL}/api/ext/session`, {
         credentials: "include",
         mode: "cors",
     });
@@ -293,7 +293,7 @@ draftForm.addEventListener("submit", async (e) => {
     showState("generating");
 
     try {
-        const res = await fetch(`${SPARROWHQ_API_URL}/api/drafts/from-context`, {
+        const res = await fetch(`${EMAILHQ_API_URL}/api/drafts/from-context`, {
             method: "POST",
             credentials: "include",
             mode: "cors",
@@ -336,7 +336,7 @@ function showError(msg) {
 // ── Button wiring ─────────────────────────────────────────────────────────────
 
 btnOpenApp.addEventListener("click", () => {
-    chrome.tabs.create({ url: SPARROWHQ_API_URL });
+    chrome.tabs.create({ url: EMAILHQ_API_URL });
 });
 
 btnAgain.addEventListener("click", () => {

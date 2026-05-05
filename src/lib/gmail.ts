@@ -418,7 +418,7 @@ function categoryToLabelName(category: string): string {
 const labelCache = new Map<string, Map<string, string>>();
 
 /**
- * Ensures all SparrowHQ category labels exist in the user's Gmail account.
+ * Ensures all EmailHQ category labels exist in the user's Gmail account.
  * Returns a map of category → Gmail label ID.
  * Results are cached in memory for the lifetime of the server process.
  */

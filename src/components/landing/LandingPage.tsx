@@ -471,7 +471,7 @@ export function LandingPage() {
               <SparrowMark size={24} color="var(--lp-accent)" />
             </div>
             <div className="leading-none">
-              <p className="font-heading text-lg font-bold tracking-[-0.03em]">SparrowHQ</p>
+              <p className="font-heading text-lg font-bold tracking-[-0.03em]">EmailHQ</p>
               <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--lp-text-muted)]">
                 Inbox command center
               </p>
@@ -587,7 +587,7 @@ export function LandingPage() {
                 variants={fadeUp}
                 className="mt-7 max-w-2xl text-[1.05rem] leading-8 text-[var(--lp-text-secondary)] md:text-[1.22rem] md:leading-9"
               >
-                SparrowHQ turns your inbox into an operations surface. It triages new mail,
+                EmailHQ turns your inbox into an operations surface. It triages new mail,
                 drafts replies with calendar and document context, and keeps attachments,
                 scheduling, and follow-up work moving from one command center.
               </motion.p>
@@ -667,7 +667,7 @@ export function LandingPage() {
                 </h2>
               </div>
               <p className="max-w-xl text-base leading-7 text-[var(--lp-text-secondary)] md:text-lg">
-                The landing page now frames SparrowHQ as a product that removes inbox drag across
+                The landing page now frames EmailHQ as a product that removes inbox drag across
                 communication, scheduling, attachments, and financial follow-up instead of just
                 drafting generic replies.
               </p>
@@ -866,7 +866,7 @@ export function LandingPage() {
                   engine</em>.
                 </h2>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--lp-text-secondary)] md:text-lg">
-                  Connect Gmail, let SparrowHQ build structure around your incoming mail, and
+                  Connect Gmail, let EmailHQ build structure around your incoming mail, and
                   start replying with context instead of friction.
                 </p>
               </div>
@@ -888,14 +888,14 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-4 border-t border-[var(--lp-border)] pt-6 text-sm text-[var(--lp-text-secondary)] md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <SparrowMark size={18} color="var(--lp-accent)" />
-            <span>SparrowHQ</span>
+            <span>EmailHQ</span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
           </div>
-          <p>{year} SparrowHQ. Built for calmer operations.</p>
+          <p>{year} EmailHQ. Built for calmer operations.</p>
         </div>
       </footer>
     </div>

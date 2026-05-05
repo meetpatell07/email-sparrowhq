@@ -61,7 +61,7 @@ const features = [
 const heroFeature = {
   icon: BrowserIcon,
   title: "Draft from anywhere — Chrome Extension",
-  body: "Open any webpage — a job posting, a pricing page, a LinkedIn profile — and SparrowHQ reads the page context, takes your intent, and drops a fully structured draft into Gmail Drafts in seconds.",
+  body: "Open any webpage — a job posting, a pricing page, a LinkedIn profile — and EmailHQ reads the page context, takes your intent, and drops a fully structured draft into Gmail Drafts in seconds.",
   accent: "#4285F4",
   tag: "Available now",
 };
@@ -244,7 +244,7 @@ export function Features() {
             className="mt-4 text-[1.05rem] font-body max-w-xl mx-auto"
             style={{ color: "var(--lp-text-secondary)" }}
           >
-            From the moment an email arrives to the second a reply leaves — SparrowHQ handles the whole flow.
+            From the moment an email arrives to the second a reply leaves — EmailHQ handles the whole flow.
           </p>
         </div>
 
