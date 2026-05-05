@@ -72,7 +72,7 @@ export function Hero() {
           className="font-body text-[1.125rem] leading-relaxed max-w-xl mb-10"
           style={{ color: "var(--lp-text-secondary)" }}
         >
-          SparrowHQ connects to Gmail, classifies every email with AI, auto-drafts
+          EmailHQ connects to Gmail, classifies every email with AI, auto-drafts
           replies for urgent threads, and lets you command your inbox in plain English.
         </p>
 

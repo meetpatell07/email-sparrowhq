@@ -1,5 +1,5 @@
 /**
- * content.js — Deep page crawler for the SparrowHQ extension.
+ * content.js — Deep page crawler for the EmailHQ extension.
  * Injected into every page at document_idle.
  * Responds to:
  *   { action: "getPageContent" }  — full page text extraction

@@ -1,5 +1,5 @@
 /**
- * generate-icons.js — Generates PNG icons for the SparrowHQ extension.
+ * generate-icons.js — Generates PNG icons for the EmailHQ extension.
  *
  * Run once (or whenever the brand changes):
  *   node icons/generate-icons.js
@@ -8,7 +8,7 @@
  *
  * Visual spec:
  *   - White circle on transparent background
- *   - SparrowHQ bird mark centred in black
+ *   - EmailHQ bird mark centred in black
  *   - Tail/wing accent at 55% opacity (grey)
  *   - White eye dot
  *
@@ -136,7 +136,7 @@ function encodePNG(rgba, size) {
 // ── Icon renderer ─────────────────────────────────────────────────────────────
 
 function renderIcon(size) {
-    // SparrowHQ SVG viewBox is 0 0 40 40.
+    // EmailHQ SVG viewBox is 0 0 40 40.
     // We add a small inset padding (10% on each side) so the bird isn't
     // clipped at the circle edge.
     const SVG_SIZE  = 40;

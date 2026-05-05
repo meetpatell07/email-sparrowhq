@@ -14,19 +14,19 @@ gsap.registerPlugin(ScrollTrigger);
 
 const faqs = [
   {
-    q: "Does SparrowHQ store my emails?",
-    a: "No. SparrowHQ reads email metadata and body in-memory for AI classification and drafting, but never stores the content in our database. Only operational metadata (Gmail message ID, received timestamp, category) is persisted.",
+    q: "Does EmailHQ store my emails?",
+    a: "No. EmailHQ reads email metadata and body in-memory for AI classification and drafting, but never stores the content in our database. Only operational metadata (Gmail message ID, received timestamp, category) is persisted.",
   },
   {
     q: "Which AI model powers classification and drafting?",
-    a: "By default, SparrowHQ uses a local Ollama model for full privacy. You can optionally configure Groq or OpenRouter for faster, cloud-based inference — all configurable in Settings with your own API keys.",
+    a: "By default, EmailHQ uses a local Ollama model for full privacy. You can optionally configure Groq or OpenRouter for faster, cloud-based inference — all configurable in Settings with your own API keys.",
   },
   {
     q: "Will the AI ever send emails without my approval?",
     a: "Never. Every AI-generated draft is saved to your Gmail Drafts folder and queued in the Drafts review panel. You explicitly approve or discard each one — nothing is sent automatically.",
   },
   {
-    q: "What Google permissions does SparrowHQ need?",
+    q: "What Google permissions does EmailHQ need?",
     a: "Gmail read + compose access (to fetch, classify, and save drafts), Google Calendar read/write (to check availability and create events), and Google Drive read (for the Drive browser and Vault backup). All scopes are shown during OAuth.",
   },
   {
@@ -35,15 +35,15 @@ const faqs = [
   },
   {
     q: "How does the Chrome Extension work?",
-    a: "Install the extension, open any webpage (job listing, pricing page, LinkedIn profile), type a recipient and a short intent, and SparrowHQ generates a structured, context-aware draft from the page content — saved directly to Gmail Drafts.",
+    a: "Install the extension, open any webpage (job listing, pricing page, LinkedIn profile), type a recipient and a short intent, and EmailHQ generates a structured, context-aware draft from the page content — saved directly to Gmail Drafts.",
   },
   {
     q: "Is there a free tier?",
     a: "Yes — the full product is free to start. Connect your Google account and access all features with a local Ollama model. Cloud AI providers require your own API key (Groq, OpenRouter).",
   },
   {
-    q: "Can I use SparrowHQ with multiple Google accounts?",
-    a: "Multi-account support is on the roadmap. Currently one Google account per SparrowHQ login is supported.",
+    q: "Can I use EmailHQ with multiple Google accounts?",
+    a: "Multi-account support is on the roadmap. Currently one Google account per EmailHQ login is supported.",
   },
 ];
 

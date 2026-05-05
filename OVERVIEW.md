@@ -1,8 +1,8 @@
-# SparrowHQ — Technical Overview
+# EmailHQ — Technical Overview
 
 ## Architecture
 
-SparrowHQ is a Next.js 16 App Router application. All Google API calls happen server-side via API routes. The client authenticates with Better Auth (Google OAuth), receives a session cookie, and communicates only with the Next.js API layer — never directly with Google or the AI provider.
+EmailHQ is a Next.js 16 App Router application. All Google API calls happen server-side via API routes. The client authenticates with Better Auth (Google OAuth), receives a session cookie, and communicates only with the Next.js API layer — never directly with Google or the AI provider.
 
 ```
 Browser → Next.js API Routes → Google APIs (Gmail, Calendar)
