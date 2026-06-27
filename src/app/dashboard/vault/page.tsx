@@ -13,7 +13,6 @@ import {
     ArrowRight01Icon,
     Cancel01Icon,
     Download01Icon,
-    GoogleDriveIcon,
     Mail01Icon,
     SparklesIcon,
     Loading03Icon,
@@ -101,11 +100,8 @@ function AttachmentPanel({
 
     const [downloading, setDownloading] = useState(false);
     const [draftLoading, setDraftLoading] = useState(false);
-    const [driveLoading, setDriveLoading] = useState(false);
     const [draft, setDraft] = useState<string | null>(null);
     const [draftCopied, setDraftCopied] = useState(false);
-    const [savedToDrive, setSavedToDrive] = useState(!!item.driveFileId);
-    const [driveLink, setDriveLink] = useState(item.driveWebViewLink);
     const [error, setError] = useState<string | null>(null);
 
     async function handleDownload() {
@@ -133,26 +129,6 @@ function AttachmentPanel({
             setError("Failed to generate draft.");
         } finally {
             setDraftLoading(false);
-        }
-    }
-
-    async function handleSaveToDrive() {
-        setDriveLoading(true);
-        setError(null);
-        try {
-            const res = await fetch(`/api/vault/${item.id}/save-to-drive`, { method: "POST" });
-            if (res.status === 409) {
-                setError("Already saved to Drive.");
-                setSavedToDrive(true);
-                return;
-            }
-            const data = await res.json();
-            setSavedToDrive(true);
-            setDriveLink(data.driveWebViewLink);
-        } catch {
-            setError("Failed to save to Drive.");
-        } finally {
-            setDriveLoading(false);
         }
     }
 
@@ -236,31 +212,6 @@ function AttachmentPanel({
                     }
                     Download
                 </button>
-
-                {/* Save to Drive */}
-                {savedToDrive && driveLink ? (
-                    <a
-                        href={driveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] text-[14px] font-medium text-[#16A34A] hover:bg-[#DCFCE7] transition-colors"
-                    >
-                        <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="shrink-0" />
-                        Saved — Open in Drive
-                    </a>
-                ) : (
-                    <button
-                        onClick={handleSaveToDrive}
-                        disabled={driveLoading}
-                        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-lg border border-[#E7E5E4] text-[14px] font-medium text-[#1C1917] hover:bg-[#F5F5F4] transition-colors disabled:opacity-50"
-                    >
-                        {driveLoading
-                            ? <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin shrink-0 text-[#78716C]" />
-                            : <HugeiconsIcon icon={GoogleDriveIcon} size={16} className="shrink-0 text-[#57534E]" />
-                        }
-                        Save to Google Drive
-                    </button>
-                )}
 
                 {/* Draft Follow-up */}
                 <button
