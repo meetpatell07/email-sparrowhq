@@ -6,44 +6,44 @@
 /* ─── Landing page design tokens ─── */
 :root {
   --lp-bg-primary:     #ffffff;
-  --lp-bg-secondary:   #f8f1e8;
-  --lp-bg-tertiary:    #efe4d6;
+  --lp-bg-secondary:   #f5f5f5;
+  --lp-bg-tertiary:    #ebebeb;
   --lp-surface:        rgba(255,255,255,0.72);
   --lp-surface-raised: rgba(255,255,255,0.92);
   --lp-surface-glass:  rgba(255,255,255,0.7);
   --lp-panel:          rgba(255,255,255,0.66);
-  --lp-border:         rgba(37,28,24,0.12);
-  --lp-border-subtle:  rgba(37,28,24,0.08);
-  --lp-text-primary:   #1f1712;
-  --lp-text-secondary: #5e4d42;
-  --lp-text-muted:     #8c7668;
-  --lp-text-inverse:   #fff8f0;
-  --lp-accent:         #f07622;
-  --lp-accent-hover:   #d96112;
-  --lp-accent-fg:      #fff8f0;
-  --lp-accent-soft:    rgba(240,118,34,0.12);
-  --lp-glow:           rgba(240,118,34,0.15);
+  --lp-border:         rgba(0,0,0,0.10);
+  --lp-border-subtle:  rgba(0,0,0,0.06);
+  --lp-text-primary:   #0a0a0a;
+  --lp-text-secondary: #3a3a3a;
+  --lp-text-muted:     #707070;
+  --lp-text-inverse:   #ffffff;
+  --lp-accent:         #0a0a0a;
+  --lp-accent-hover:   #333333;
+  --lp-accent-fg:      #ffffff;
+  --lp-accent-soft:    rgba(0,0,0,0.07);
+  --lp-glow:           rgba(0,0,0,0.06);
 }
 
 [data-theme="dark"] {
-  --lp-bg-primary:     #160f0d;
-  --lp-bg-secondary:   #1e1412;
-  --lp-bg-tertiary:    #261a17;
-  --lp-surface:        rgba(34,23,20,0.76);
-  --lp-surface-raised: rgba(42,28,24,0.94);
-  --lp-surface-glass:  rgba(26,18,16,0.76);
-  --lp-panel:          rgba(255,255,255,0.035);
-  --lp-border:         rgba(255,240,231,0.1);
-  --lp-border-subtle:  rgba(255,240,231,0.06);
-  --lp-text-primary:   #fff6ef;
-  --lp-text-secondary: #d8c1b1;
-  --lp-text-muted:     #9f8778;
-  --lp-text-inverse:   #160f0d;
-  --lp-accent:         #ff9d4d;
-  --lp-accent-hover:   #ffb26c;
-  --lp-accent-fg:      #1c130f;
-  --lp-accent-soft:    rgba(255,157,77,0.14);
-  --lp-glow:           rgba(255,157,77,0.18);
+  --lp-bg-primary:     #0a0a0a;
+  --lp-bg-secondary:   #141414;
+  --lp-bg-tertiary:    #1e1e1e;
+  --lp-surface:        rgba(20,20,20,0.76);
+  --lp-surface-raised: rgba(28,28,28,0.94);
+  --lp-surface-glass:  rgba(15,15,15,0.76);
+  --lp-panel:          rgba(255,255,255,0.04);
+  --lp-border:         rgba(255,255,255,0.10);
+  --lp-border-subtle:  rgba(255,255,255,0.06);
+  --lp-text-primary:   #f5f5f5;
+  --lp-text-secondary: #c0c0c0;
+  --lp-text-muted:     #888888;
+  --lp-text-inverse:   #0a0a0a;
+  --lp-accent:         #ffffff;
+  --lp-accent-hover:   #e0e0e0;
+  --lp-accent-fg:      #0a0a0a;
+  --lp-accent-soft:    rgba(255,255,255,0.10);
+  --lp-glow:           rgba(255,255,255,0.07);
 }
 
 /* ─── Landing page utilities ─── */
@@ -66,9 +66,9 @@
 
 .landing-noise {
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12) 0, transparent 24%),
-    radial-gradient(circle at 80% 10%, rgba(255,157,77,0.1) 0, transparent 30%),
-    radial-gradient(circle at 50% 80%, rgba(255,255,255,0.08) 0, transparent 28%);
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.10) 0, transparent 24%),
+    radial-gradient(circle at 80% 10%, rgba(0,0,0,0.04) 0, transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(255,255,255,0.06) 0, transparent 28%);
 }
 
 .landing-spotlight {
@@ -81,7 +81,7 @@
   right: -6rem;
   width: 22rem;
   height: 22rem;
-  background: radial-gradient(circle, rgba(255,157,77,0.3) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(0,0,0,0.06) 0%, transparent 68%);
 }
 
 .landing-spotlight-two {
@@ -89,13 +89,13 @@
   left: -8rem;
   width: 26rem;
   height: 26rem;
-  background: radial-gradient(circle, rgba(117,199,255,0.18) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(180,180,180,0.10) 0%, transparent 68%);
 }
 
 .landing-card-outline {
   background:
-    linear-gradient(145deg, rgba(255,255,255,0.22), transparent 40%),
-    linear-gradient(320deg, rgba(255,157,77,0.18), transparent 40%);
+    linear-gradient(145deg, rgba(255,255,255,0.20), transparent 40%),
+    linear-gradient(320deg, rgba(0,0,0,0.08), transparent 40%);
   filter: blur(26px);
   opacity: 0.65;
 }
@@ -110,7 +110,7 @@
   inset: 1.25rem 6% auto;
   height: 9rem;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255,157,77,0.16) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(0,0,0,0.06) 0%, transparent 72%);
   filter: blur(18px);
   pointer-events: none;
 }
@@ -140,11 +140,15 @@
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  background: linear-gradient(90deg, #0a0a0a, #555555);
   transform-origin: left;
   animation: scroll-progress linear;
   animation-timeline: scroll(root);
   z-index: 100;
+}
+
+[data-theme="dark"] .scroll-progress-bar {
+  background: linear-gradient(90deg, #ffffff, #aaaaaa);
 }
 
 /* ── Fade-up on scroll entry ── */
