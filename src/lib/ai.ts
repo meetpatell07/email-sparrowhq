@@ -30,15 +30,27 @@ const invoiceSchema = z.object({
 });
 
 export async function callGroq(prompt: string): Promise<string> {
-    const baseUrl = (process.env.OLLAMA_URL ?? "http://localhost:11434").replace(/\/$/, "");
-    const model   = process.env.OLLAMA_MODEL ?? "llama3.2";
+    const groqKey = process.env.GROQ_API_KEY;
+
+    let baseUrl: string;
+    let model: string;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+    if (groqKey) {
+        // Groq cloud API — fast, always available, no local tunnel required
+        baseUrl = "https://api.groq.com/openai";
+        model = process.env.GROQ_MODEL ?? "llama-3.1-8b-instant";
+        headers["Authorization"] = `Bearer ${groqKey}`;
+    } else {
+        // Fallback: local Ollama (dev only)
+        baseUrl = (process.env.OLLAMA_URL ?? "http://localhost:11434").replace(/\/$/, "");
+        model = process.env.OLLAMA_MODEL ?? "llama3.2";
+        headers["ngrok-skip-browser-warning"] = "true";
+    }
 
     const response = await fetch(`${baseUrl}/v1/chat/completions`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-        },
+        headers,
         body: JSON.stringify({
             model,
             messages: [{ role: "user", content: prompt }],
@@ -48,7 +60,7 @@ export async function callGroq(prompt: string): Promise<string> {
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Ollama error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`AI error [${groqKey ? "groq" : "ollama"}]: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -204,18 +216,6 @@ export async function generateDraftReply(
 
 Email you are replying to:
 ${emailContent}${calSection}${styleSection}
-
-Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
-
-1. Greeting — "Hi ${senderFirstName}," (use "Dear ${senderFirstName}," if the email is very formal)
-2. Blank line
-3. Opening sentence — one concise sentence acknowledging what they wrote about (no generic openers like "I hope this email finds you well")
-4. Blank line
-5. Main reply — 2–3 sentences directly addressing their question, request, or message. Be specific — reference actual details from their email. Do not be vague or generic.
-6. Blank line
-7. Closing sentence — one natural sentence (e.g. "Let me know if you have any questions." or "Looking forward to hearing from you.")
-8. Blank line
-9. Sign-off — "Best regards," on its own line, then "${userName}" on the next line
 
 Write a complete, properly structured reply. Use this exact structure with a blank line between each section:
 
