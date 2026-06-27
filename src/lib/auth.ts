@@ -78,8 +78,6 @@ export const auth = betterAuth({
                 "https://www.googleapis.com/auth/gmail.modify",
                 "https://www.googleapis.com/auth/calendar.readonly",
                 "https://www.googleapis.com/auth/calendar.events",
-                "https://www.googleapis.com/auth/drive.readonly",
-                "https://www.googleapis.com/auth/drive.file",
             ],
             accessType: "offline",
             prompt: "consent", // Force consent

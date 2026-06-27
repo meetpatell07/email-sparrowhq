@@ -11,7 +11,6 @@ import {
     Settings01Icon,
     ArrowUpDownIcon,
     UserCircleIcon,
-    GoogleDriveIcon,
     Cancel01Icon,
     ListViewIcon,
 } from "@hugeicons/core-free-icons";
@@ -30,7 +29,6 @@ const baseNav = [
     { name: "Categories",  icon: Tag01Icon,             href: "/dashboard/categories" },
     { name: "Vault",       icon: Archive01Icon,         href: "/dashboard/vault" },
     { name: "Drafts",      icon: CheckmarkSquare01Icon, href: "/dashboard/drafts" },
-    { name: "Drive",       icon: GoogleDriveIcon,       href: "/dashboard/drive" },
 ];
 
 interface SidebarProps {

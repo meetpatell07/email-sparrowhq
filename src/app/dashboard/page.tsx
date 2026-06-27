@@ -2,9 +2,8 @@
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Loading02Icon, ArrowUpRight01Icon, Menu01Icon, GridViewIcon } from "@hugeicons/core-free-icons";
+import { Loading02Icon, ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 import { useEffect, useState, useMemo } from "react";
-import { DriveFilesTab } from "@/components/DriveFilesTab";
 import { format, isToday, isTomorrow, differenceInMinutes, addDays, startOfDay } from "date-fns";
 import useSWR from "swr";
 import Link from "next/link";
@@ -189,8 +188,7 @@ function CalendarTab() {
 export default function DashboardPage() {
     const [emails, setEmails] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"All Sources" | "Gmail" | "Drive" | "Calendar">("All Sources");
-    const [driveViewMode, setDriveViewMode] = useState<"list" | "grid">("grid");
+    const [activeTab, setActiveTab] = useState<"All Sources" | "Gmail" | "Calendar">("All Sources");
 
     useEffect(() => {
         fetch("/api/emails?limit=20")
@@ -209,11 +207,10 @@ export default function DashboardPage() {
 
                     {/* Tab bar */}
                     <div className="flex items-center gap-4 md:gap-6 border-b border-[#E7E5E4] pb-3 overflow-x-auto no-scrollbar">
-                        {(["All Sources", "Gmail", "Drive", "Calendar"] as const).map((tab) => {
+                        {(["All Sources", "Gmail", "Calendar"] as const).map((tab) => {
                             const isActive = activeTab === tab;
                             const icons: Record<string, string> = {
                                 Gmail: "https://cdn.brandfetch.io/gmail.com/icon/theme/dark/fallback/transparent",
-                                Drive: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg",
                                 Calendar: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg",
                             };
                             return (
@@ -236,30 +233,7 @@ export default function DashboardPage() {
 
                     {/* Content */}
                     <div>
-                        {activeTab === "Drive" ? (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-[11px] font-semibold text-[#A8A29E] tracking-widest uppercase">DRIVE FILES</h3>
-                                    <div className="flex items-center gap-0.5 p-1 bg-[#F5F5F4] rounded-lg">
-                                        <button
-                                            onClick={() => setDriveViewMode("list")}
-                                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${driveViewMode === "list" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
-                                            aria-label="List view"
-                                        >
-                                            <HugeiconsIcon icon={Menu01Icon} size={15} />
-                                        </button>
-                                        <button
-                                            onClick={() => setDriveViewMode("grid")}
-                                            className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${driveViewMode === "grid" ? "bg-white shadow-sm text-[#1C1917]" : "text-[#A8A29E] hover:text-[#57534E]"}`}
-                                            aria-label="Grid view"
-                                        >
-                                            <HugeiconsIcon icon={GridViewIcon} size={15} />
-                                        </button>
-                                    </div>
-                                </div>
-                                <DriveFilesTab viewMode={driveViewMode} />
-                            </div>
-                        ) : activeTab === "Calendar" ? (
+                        {activeTab === "Calendar" ? (
                             <CalendarTab />
                         ) : (
                             <div>

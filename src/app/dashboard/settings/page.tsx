@@ -45,8 +45,6 @@ function ScopeList({ scope }: { scope: string | null }) {
         "https://www.googleapis.com/auth/gmail.modify": "Modify emails & labels",
         "https://www.googleapis.com/auth/calendar.readonly": "Read calendar",
         "https://www.googleapis.com/auth/calendar.events": "Manage calendar events",
-        "https://www.googleapis.com/auth/drive.readonly": "Read Drive files",
-        "https://www.googleapis.com/auth/drive.file": "Access Drive files",
         "openid": "Identity",
         "email": "Email address",
         "profile": "Profile info",
