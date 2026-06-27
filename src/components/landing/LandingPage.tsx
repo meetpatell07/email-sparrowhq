@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { SparrowMark } from "./Logo";
 import { beginGoogleSignIn, type GoogleSignInAttempt } from "@/lib/google-oauth";
 import { InAppBrowserNotice } from "@/components/InAppBrowserNotice";
 
@@ -17,6 +17,11 @@ const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.11 } },
 };
+
+const navigation = [
+  { label: "Product", href: "#features" },
+  { label: "FAQ", href: "#faq" },
+];
 
 const features = [
   {
@@ -51,8 +56,21 @@ const faqs = [
   },
 ];
 
+function LogoMark({ size = 28 }: { size?: number }) {
+  return (
+    <Image
+      src="/emailhq.svg"
+      alt="EmailHQ"
+      width={size}
+      height={size}
+      priority
+    />
+  );
+}
+
 export function LandingPage() {
   const [connecting, setConnecting] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [googleAttempt, setGoogleAttempt] = useState<GoogleSignInAttempt | null>(null);
   const router = useRouter();
   const year = useMemo(() => new Date().getFullYear(), []);
@@ -71,7 +89,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-[#0a0a0a] antialiased selection:bg-black/10">
       {!googleAttempt?.ok && googleAttempt?.reason === "in_app_browser" && (
-        <div className="fixed inset-x-4 top-20 z-[60] mx-auto w-full max-w-2xl">
+        <div className="fixed inset-x-4 top-24 z-[60] mx-auto w-full max-w-2xl">
           <InAppBrowserNotice
             browser={googleAttempt.browser}
             externalUrl={googleAttempt.externalUrl}
@@ -81,18 +99,33 @@ export function LandingPage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+      {/* Sticky pill navbar */}
+      <header className="sticky top-0 z-50 px-4 pt-4 md:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between rounded-full border border-black/[0.09] bg-white/80 px-4 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <SparrowMark size={26} color="#0a0a0a" />
-            <span className="font-heading text-[15px] font-semibold tracking-tight">EmailHQ</span>
+            <LogoMark size={32} />
           </Link>
-          <div className="flex items-center gap-3">
+
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-6 md:flex">
+            {navigation.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="text-sm text-[#666] transition-colors hover:text-[#0a0a0a]"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Desktop actions */}
+          <div className="hidden items-center gap-2 md:flex">
             <button
               type="button"
               onClick={() => router.push("/outlook-coming-soon")}
-              className="hidden rounded-full border border-black/15 px-4 py-2 text-sm text-[#666] transition-colors hover:border-black/30 hover:text-black sm:block"
+              className="rounded-full border border-black/12 px-4 py-2 text-sm text-[#555] transition-colors hover:border-black/25 hover:text-black"
             >
               Outlook soon
             </button>
@@ -100,12 +133,73 @@ export function LandingPage() {
               type="button"
               onClick={handleConnect}
               disabled={connecting}
-              className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75 disabled:opacity-40"
+              className="rounded-full bg-[#0a0a0a] px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-75 disabled:opacity-40"
             >
               {connecting ? "Connecting…" : "Connect Gmail"}
             </button>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 md:hidden"
+            aria-label="Toggle menu"
+          >
+            <span className="flex flex-col gap-[5px]">
+              <span
+                className={`block h-[1.5px] w-4 bg-current transition-all duration-300 ${mobileOpen ? "translate-y-[6.5px] rotate-45" : ""}`}
+              />
+              <span
+                className={`block h-[1.5px] w-4 bg-current transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`}
+              />
+              <span
+                className={`block h-[1.5px] w-4 bg-current transition-all duration-300 ${mobileOpen ? "-translate-y-[6.5px] -rotate-45" : ""}`}
+              />
+            </span>
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto mt-2 max-w-5xl rounded-3xl border border-black/[0.09] bg-white/90 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-xl md:hidden"
+          >
+            <div className="flex flex-col gap-3">
+              {navigation.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="text-base font-medium text-[#0a0a0a]"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={handleConnect}
+                disabled={connecting}
+                className="w-full rounded-full bg-[#0a0a0a] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                {connecting ? "Connecting…" : "Connect Gmail"}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/outlook-coming-soon")}
+                className="w-full rounded-full border border-black/12 px-5 py-3 text-sm text-[#555]"
+              >
+                Join Outlook waitlist
+              </button>
+            </div>
+          </motion.div>
+        )}
       </header>
 
       <main>
@@ -118,10 +212,6 @@ export function LandingPage() {
               variants={stagger}
               className="flex flex-col items-start gap-7"
             >
-              <motion.div variants={fadeUp}>
-                <SparrowMark size={52} color="#0a0a0a" />
-              </motion.div>
-
               <motion.h1
                 variants={fadeUp}
                 className="font-heading text-[clamp(2.8rem,6vw,5.2rem)] font-semibold leading-[0.97] tracking-[-0.055em]"
@@ -131,7 +221,7 @@ export function LandingPage() {
 
               <motion.p
                 variants={fadeUp}
-                className="max-w-[38ch] text-[1.1rem] leading-8 text-[#555]"
+                className="max-w-[40ch] text-[1.1rem] leading-8 text-[#555]"
               >
                 EmailHQ triages every message, drafts context-aware replies, and keeps
                 scheduling, documents, and follow-ups moving — from one place.
@@ -142,7 +232,7 @@ export function LandingPage() {
                   type="button"
                   onClick={handleConnect}
                   disabled={connecting}
-                  className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-75 disabled:opacity-40"
+                  className="rounded-full bg-[#0a0a0a] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-75 disabled:opacity-40"
                 >
                   {connecting ? "Connecting…" : "Start with Gmail →"}
                 </button>
@@ -159,7 +249,7 @@ export function LandingPage() {
         </section>
 
         {/* Features */}
-        <section className="border-t border-black/[0.07] px-6 py-20">
+        <section id="features" className="border-t border-black/[0.07] px-6 py-20">
           <div className="mx-auto max-w-5xl">
             <div className="grid gap-px bg-black/[0.06] sm:grid-cols-3">
               {features.map((f, i) => (
@@ -171,10 +261,10 @@ export function LandingPage() {
                   transition={{ duration: 0.55, delay: i * 0.09, ease: [0.22, 1, 0.36, 1] }}
                   className="bg-white px-8 py-9"
                 >
-                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#aaa]">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#bbb]">
                     {f.num}
                   </p>
-                  <h3 className="mt-4 text-[1.15rem] font-semibold tracking-[-0.03em]">
+                  <h3 className="mt-4 text-[1.1rem] font-semibold tracking-[-0.03em]">
                     {f.title}
                   </h3>
                   <p className="mt-3 text-sm leading-7 text-[#666]">{f.body}</p>
@@ -185,9 +275,9 @@ export function LandingPage() {
         </section>
 
         {/* FAQ */}
-        <section className="border-t border-black/[0.07] px-6 py-20">
+        <section id="faq" className="border-t border-black/[0.07] px-6 py-20">
           <div className="mx-auto max-w-3xl">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#aaa]">FAQ</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#bbb]">FAQ</p>
             <div className="mt-8 divide-y divide-black/[0.07]">
               {faqs.map((faq, i) => (
                 <motion.div
@@ -226,7 +316,7 @@ export function LandingPage() {
                 type="button"
                 onClick={handleConnect}
                 disabled={connecting}
-                className="shrink-0 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-75 disabled:opacity-40"
+                className="shrink-0 rounded-full bg-[#0a0a0a] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-75 disabled:opacity-40"
               >
                 {connecting ? "Connecting…" : "Get started →"}
               </button>
@@ -239,7 +329,7 @@ export function LandingPage() {
       <footer className="border-t border-black/[0.07] px-6 py-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between text-xs text-[#aaa]">
           <div className="flex items-center gap-2">
-            <SparrowMark size={13} color="#aaa" />
+            <LogoMark size={16} />
             <span>EmailHQ</span>
           </div>
           <div className="flex gap-5">
